@@ -106,6 +106,8 @@ END
 ELSE BEGIN
     IF @TotalNotasCurso = @TotalCursosMatriculados BEGIN
 
+        /* Impedidios todos los cursos que no pagaron sus cuotas */
+
         -- Var obtener ultimo periodo academico de la deuda de estudiante 
         DECLARE @DeudaPeriodoMax VARCHAR(4);
         SELECT @DeudaPeriodoMax = MAX(PeriAcad) from  SGA.dbo.Deudas WHERE NumDI = @Num_DI and [AñoAcad] =  @MatriculaAnioMax;
@@ -166,9 +168,6 @@ ELSE BEGIN
                     NUll, 'B026', @numMaxBoletaFEChar, NULL, NULL, NULL, NULL 
             );
 
-            select * from SGA.dbo.FE_TipoDocumento
-            select top 10 * from SGA.dbo.Operacion where (Serie_FE <> null or Serie_FE <> '') and (Numero_FE <> null or Numero_FE <> '') and Serie_FE like 'B0%'
-
 
             -- Var maximo año academico que no pago las cuotas
             DECLARE @maxAnioNoPagoCuotas CHAR(4);
@@ -178,19 +177,6 @@ ELSE BEGIN
             DECLARE @maxPeriAcadDeuda CHAR(4);
             SELECT @maxPeriAcadDeuda = MAX(PeriAcad) FROM SGA.dbo.Deudas WHERE NumDI = @Num_DI AND CondDeud  in ('1', '9') AND [AñoAcad] = @maxAnioNoPagoCuotas;
             
-
-
-            SELECT top 10 * from SGA.dbo.DetOper
-            -- CodContab
-            -- NumCuota
-            -- 
-
-            select top 10 * from SGA.dbo.DetOper do 
-            INNER join SGA.dbo.Operacion o  on do.SeriOper = o.SeriOper and do.NumOper = o.NumOper
-            INNER JOIN SGA.dbo.NumeracionFE nfe on TRIM(do.Comprobante) = TRIM(nfe.SerieElec)+TRIM(nfe.NumeroElec)
-            where  o.NumDI = 'f10102e' and nfe.serie = '0013' and o.NumOper = '000465588' 
-
-            select top 10 * from SGA.dbo.NumeracionFE were 
 
             INSERT INTO SGA.dbo.DetOper
                 (
@@ -256,7 +242,7 @@ ELSE BEGIN
 
         END 
         ELSE BEGIN
-            -- Impedidios todos los cursos que pagaron sus cuotas
+            /* Impedidios todos los cursos que pagaron sus cuotas */
 
             -- Var maximo año academico que pago las cuotas
             DECLARE @maxAnioPagoCuotas CHAR(4);
@@ -292,16 +278,6 @@ ELSE BEGIN
                 DECLARE @numMaxCreditoChar CHAR(9);
                 SET @numMaxCreditoChar = RIGHT('000000000' + LTRIM(RTRIM(CONVERT(CHAR(9), @numMaxCredito ))), 9);
 
-                -- SELECT distinct Cod_NotaCredDeb from SGA.dbo.Notas_Cred_Deb
-                -- SELECT distinct Item from SGA.dbo.Notas_Cred_Deb
-                -- SELECT top 10 * from SGA.dbo.Notas_Cred_Deb
-
-                -- SELECT top 10 * from SGA.dbo.TipoNotaCredito
-                -- SELECT top 10 * from SGA.dbo.TipoNotaDebito
-
-                -- select top 10 * from SGA.dbo.Notas_Cred_Deb ncd
-                -- INNER JOIN SGA.dbo.Operacion o on ncd.SeriOpRef = o.SeriOper and ncd.NumOpRef = o.NumOper
-                -- where o.SeriOper = '8888'
                 
                 IF @Declarado_Sunat = 1 BEGIN
 
@@ -318,58 +294,8 @@ ELSE BEGIN
 
                     UPDATE SGA.dbo.Usuarios SET NumNCredito = @numMaxCreditoChar where Serie = @usuario_serie 
                         
-                        -- UPDATE SGA.dbo.Operacion SET TipOper = '02' WHERE SeriOper = @Serie_Oper_Actual AND NumOper = @Num_Oper_Actual    
+                    -- UPDATE SGA.dbo.Operacion SET TipOper = '02' WHERE SeriOper = @Serie_Oper_Actual AND NumOper = @Num_Oper_Actual    
 
-                        /*
-                        select top 10 * from SGA.dbo.Usuarios 
-                        select top 10 * from SGA.dbo.Operacion o  
-
-                        select top 10 * from SGA.dbo.NumeracionFE where serie = '8888'
-
-                        select distinct SerieElec from SGA.dbo.NumeracionFE where serie = '8888'
-                        select top 10 * from SGA.dbo.Notas_Cred_Deb 
-                        select distinct Serie_Nota from SGA.dbo.Notas_Cred_Deb where SeriOper = '8888'
-
-
-                    
-                        SELECT top 10 * from SGA.dbo.Notas_Cred_Deb
-                        select top 10 * from SGA.dbo.Operacion where (Serie_FE <> '' OR Serie_FE <> null) AND (Numero_FE <> '' or Numero_FE <> null)
-                
-
-
-
-                        select distinct TipOper from SGA.dbo.Operacion
-                        select distinct TipDI from SGA.dbo.Operacion
-                        select distinct AnulOper from SGA.dbo.Operacion
-                        select distinct TipDoc from SGA.dbo.Operacion
-                        select distinct programa from SGA.dbo.Operacion
-
-
-                        select * from SGA.dbo.TipOper
-                        SELECT* from SGA.dbo.TipoDocOper
-
-                    -- SELECT top 10 * FROM SGA.dbo.Notas_Cred_Deb 
-                    -- select top 10 * from dbo.Usuarios where Serie = '0100' 
-                    -- SELECT top 10 * from dbo.NumeracionFE where serie = '0100'
-                    SELECT distinct SerieElec from SGA.dbo.NumeracionFE where serie = '8888'
-                    SELECT top 10 * from SGA.dbo.DatosUsuario
-                    
-                    
-
-                    SELECT * from SGA.dbo.TipoNotaCredito
-                    SELECT top 10
-                        ncd.SeriOper, ncd.NumOper,
-                        ncd.Serie_Nota, ncd.Numero_Nota,
-                        ncd.SeriOpRef, ncd.NumOpRef,
-                        o.SeriOper, o.NumOper,
-                        o.Serie_FE, o.Numero_FE
-                    FROM SGA.dbo.Notas_Cred_Deb ncd 
-                    INNER JOIN SGA.dbo.Operacion o on ncd.SeriOpRef = o.SeriOper and ncd.NumOpRef = o.NumOper
-
-                    select top 10 * from SGA.dbo.Notas_Cred_Deb
-
-                    */
-                    
 
                 END 
                 ELSE BEGIN
@@ -626,3 +552,72 @@ WHERE
     deu.PeriAcad = '01' AND
     deu.NumDI = @Num_DI
 */
+
+ SELECT top 10 * from SGA.dbo.DetOper
+
+select * from SGA.dbo.FE_TipoDocumento
+select top 10 * from SGA.dbo.Operacion where (Serie_FE <> null or Serie_FE <> '') and (Numero_FE <> null or Numero_FE <> '') and Serie_FE like 'B0%'
+
+select top 10 * from SGA.dbo.DetOper do 
+INNER join SGA.dbo.Operacion o  on do.SeriOper = o.SeriOper and do.NumOper = o.NumOper
+INNER JOIN SGA.dbo.NumeracionFE nfe on TRIM(do.Comprobante) = TRIM(nfe.SerieElec)+TRIM(nfe.NumeroElec)
+where  o.NumDI = 'f10102e' and nfe.serie = '0013' and o.NumOper = '000465588' 
+
+select top 10 * from SGA.dbo.NumeracionFE were 
+
+-- SELECT distinct Cod_NotaCredDeb from SGA.dbo.Notas_Cred_Deb
+-- SELECT distinct Item from SGA.dbo.Notas_Cred_Deb
+-- SELECT top 10 * from SGA.dbo.Notas_Cred_Deb
+
+-- SELECT top 10 * from SGA.dbo.TipoNotaCredito
+-- SELECT top 10 * from SGA.dbo.TipoNotaDebito
+
+-- select top 10 * from SGA.dbo.Notas_Cred_Deb ncd
+-- INNER JOIN SGA.dbo.Operacion o on ncd.SeriOpRef = o.SeriOper and ncd.NumOpRef = o.NumOper
+-- where o.SeriOper = '8888'
+
+select top 10 * from SGA.dbo.Usuarios 
+select top 10 * from SGA.dbo.Operacion o  
+
+select top 10 * from SGA.dbo.NumeracionFE where serie = '8888'
+
+select distinct SerieElec from SGA.dbo.NumeracionFE where serie = '8888'
+select top 10 * from SGA.dbo.Notas_Cred_Deb 
+select distinct Serie_Nota from SGA.dbo.Notas_Cred_Deb where SeriOper = '8888'
+
+
+
+SELECT top 10 * from SGA.dbo.Notas_Cred_Deb
+select top 10 * from SGA.dbo.Operacion where (Serie_FE <> '' OR Serie_FE <> null) AND (Numero_FE <> '' or Numero_FE <> null)
+
+
+select distinct TipOper from SGA.dbo.Operacion
+select distinct TipDI from SGA.dbo.Operacion
+select distinct AnulOper from SGA.dbo.Operacion
+select distinct TipDoc from SGA.dbo.Operacion
+select distinct programa from SGA.dbo.Operacion
+
+select * from SGA.dbo.TipOper
+SELECT* from SGA.dbo.TipoDocOper
+
+-- SELECT top 10 * FROM SGA.dbo.Notas_Cred_Deb 
+-- select top 10 * from dbo.Usuarios where Serie = '0100' 
+-- SELECT top 10 * from dbo.NumeracionFE where serie = '0100'
+
+SELECT distinct SerieElec from SGA.dbo.NumeracionFE where serie = '8888'
+SELECT top 10 * from SGA.dbo.DatosUsuario
+
+
+
+SELECT * from SGA.dbo.TipoNotaCredito
+SELECT top 10
+    ncd.SeriOper, ncd.NumOper,
+    ncd.Serie_Nota, ncd.Numero_Nota,
+    ncd.SeriOpRef, ncd.NumOpRef,
+    o.SeriOper, o.NumOper,
+    o.Serie_FE, o.Numero_FE
+FROM SGA.dbo.Notas_Cred_Deb ncd 
+INNER JOIN SGA.dbo.Operacion o on ncd.SeriOpRef = o.SeriOper and ncd.NumOpRef = o.NumOper
+
+select top 10 * from SGA.dbo.Notas_Cred_Deb
+
