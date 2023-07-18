@@ -77,48 +77,48 @@ from Academico.TD_ConvalidacionesTemp;
 -- INICIO
 
 -- Var total notas curso
-DECLARE @totalNotasCurso int;
+DECLARE @TotalNotasCurso int;
 -- Var Total cursos matriculados
-DECLARE @totalCursosMatriculados int;
+DECLARE @TotalCursosMatriculados int;
 
 DECLARE @Num_DI varchar(15) = 'A621524';
 DECLARE @usuario_serie char(4) = '8888';
 
-SELECT @totalNotasCurso = count(Nta_Promedio), @totalCursosMatriculados = count(Asi_Id)
+-- Var Obtener ultimo año de matricula del estudiante Mtr_Anio
+DECLARE @MatriculaAnioMax VARCHAR(4);
+SELECT @MatriculaAnioMax = MAX(Mtr_Anio)from DBCampusNet.dbo.Nta_Nota where Est_Id = @Num_DI;
+
+-- Var Obtener ultimo periodo de matricula del estudiante Mtr_Periodo
+DECLARE @MatriculaPeriodoMax VARCHAR(4);
+SELECT @MatriculaPeriodoMax = MAX(Mtr_Periodo) from DBCampusNet.dbo.Nta_Nota WHERE Est_Id = @Num_DI and Mtr_Anio =  @MatriculaAnioMax;
+
+SELECT @TotalNotasCurso = count(Nta_Promedio), @TotalCursosMatriculados = count(Asi_Id)
 FROM DBCampusNet.dbo.Nta_Nota
-WHERE (Mtr_Anio BETWEEN '2015' AND '2022') AND -- Mtr_Anio = '2015' and
-    --Mtr_Periodo = 1 and -- Omitir
+WHERE Mtr_Anio = @MatriculaAnioMax  and --(Mtr_Anio BETWEEN '2015' AND '2022') AND -- Mtr_Anio = '2015' and
+    Mtr_Periodo = @MatriculaPeriodoMax and  -- Mtr_Periodo = 1 and -- Omitir
     Nta_Promedio = 'im' AND
     --Nta_Seccion in ('I', 'E', 'S') and 
     Est_Id = @Num_DI;
 
-IF @totalNotasCurso = 0 AND @totalCursosMatriculados = 0 BEGIN
+IF @TotalNotasCurso = 0 AND @TotalCursosMatriculados = 0 BEGIN
     print 'No existe registro alguno';
 END 
 ELSE BEGIN
-    IF @totalNotasCurso = @totalCursosMatriculados BEGIN
+    IF @TotalNotasCurso = @TotalCursosMatriculados BEGIN
+
+        -- Var obtener ultimo periodo academico de la deuda de estudiante 
+        DECLARE @DeudaPeriodoMax VARCHAR(4);
+        SELECT @DeudaPeriodoMax = MAX(PeriAcad) from  SGA.dbo.Deudas WHERE NumDI = @Num_DI and [AñoAcad] =  @MatriculaAnioMax;
 
         IF EXISTS ( SELECT * 
             FROM SGA.dbo.Deudas deu
             WHERE 
+                deu.[AñoAcad] = @MatriculaAnioMax AND
+                deu.PeriAcad = @DeudaPeriodoMax AND
+                -- (deu.[AñoAcad] BETWEEN '2015' AND '2022') AND
                 deu.CondDeud IN (0,9) AND
-                --deu.[AñoAcad] = '2015' AND
-                (deu.[AñoAcad] BETWEEN '2015' AND '2022') AND
                 deu.NumCuota in (01, 02, 03, 04, 05) AND
-                --deu.PeriAcad = '01' AND -- Omitir
                 deu.NumDI = @Num_DI ) BEGIN
-
-            /*
-            -- Var total de cuotas de pension de estudiante
-            DECLARE @totalCuotaPension char(2)
-            SELECT  @totalCuotaPension = COUNT(deu.NumCuota) FROM SGA.dbo.Deudas deu
-            WHERE 
-                deu.CondDeud IN (0,9) AND 
-                deu.[AñoAcad] = '2015' AND
-                deu.NumCuota in (01, 02, 03, 04, 05) AND
-                deu.PeriAcad = '01' AND
-                deu.NumDI = @Num_DI
-            */
 
             -- Var incremento numeracion_operacion
             DECLARE @numMaxOpe INT;
@@ -178,6 +178,8 @@ ELSE BEGIN
             DECLARE @maxPeriAcadDeuda CHAR(4);
             SELECT @maxPeriAcadDeuda = MAX(PeriAcad) FROM SGA.dbo.Deudas WHERE NumDI = @Num_DI AND CondDeud  in ('1', '9') AND [AñoAcad] = @maxAnioNoPagoCuotas;
             
+
+
             SELECT top 10 * from SGA.dbo.DetOper
             -- CodContab
             -- NumCuota
@@ -606,4 +608,21 @@ WHERE CondDeud IN (0,9) AND
 NumCuota in (01, 02, 03, 04, 05) AND
 NumDI = @Num_DI
 
+*/
+
+select top 10 * from SGA.dbo.Deudas
+
+select Distinct PeriAcad from SGA.dbo.Deudas
+select Distinct Mtr_Periodo from DBCampusNet.dbo.Nta_Nota
+
+/*
+-- Var total de cuotas de pension de estudiante
+DECLARE @totalCuotaPension char(2)
+SELECT  @totalCuotaPension = COUNT(deu.NumCuota) FROM SGA.dbo.Deudas deu
+WHERE 
+    deu.CondDeud IN (0,9) AND 
+    deu.[AñoAcad] = '2015' AND
+    deu.NumCuota in (01, 02, 03, 04, 05) AND
+    deu.PeriAcad = '01' AND
+    deu.NumDI = @Num_DI
 */
