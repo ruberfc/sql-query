@@ -195,6 +195,8 @@ ELSE BEGIN
                     '', '', '', '', ''
             );
 
+            select top 10 * from SGA.DBO.DetOper where DocRef like 'N%'
+
             -- Var 
             DECLARE @numMaxBoleta int;
             SELECT @numMaxBoleta = CONVERT(INT, NumBoleta) FROM SGA.dbo.Usuarios WHERE Serie = @usuario_serie;
