@@ -7,6 +7,7 @@ DECLARE @TotalCursosMatriculados int;
 
 DECLARE @Num_DI varchar(15) = 'A621524';
 DECLARE @usuario_serie char(4) = '8888';
+DECLARE @Serie_Boleta char(4) = 'B026';
 
 -- Var Obtener ultimo año de matricula del estudiante Mtr_Anio
 DECLARE @MatriculaAnioMax VARCHAR(4);
@@ -116,7 +117,7 @@ ELSE BEGIN
                     @usuario_serie, @numMaxOperChar, '12', @Num_DI, '01', -- condonacion
                     CONVERT(smalldatetime, GETDATE(), 120), CONVERT(char(8), GETDATE(), 108), 0, 104, '1', 1, 'OBS - Condonacion deuda 2015-I a 2022-II',
                     'ADMINISTRADOR', '01', @codEspEst, @sedeEst, @programa, '0',
-                    NUll, 'B026', @numMaxBoletaChar, NULL, NULL, NULL, NULL 
+                    NUll, @Serie_Boleta, @numMaxBoletaChar, NULL, NULL, NULL, NULL 
                 );
 
                 -- Var maximo año academico que no pago las cuotas
@@ -144,31 +145,52 @@ ELSE BEGIN
                         '', '', '', '', ''
                 );
 
-                INSERT INTO SGA.dbo.NumeracionFE (SerieElec, NumeroElec, c_tipdoc, serie, dif)
-                VALUES('B026', @numMaxBoletaChar, '06', @usuario_serie, '3');
+                /*
+                    INSERT INTO SGA.dbo.NumeracionFE (SerieElec, NumeroElec, c_tipdoc, serie, dif)
+                    VALUES(@Serie_Boleta, @numMaxBoletaChar, '06', @usuario_serie, '3');
+                */
+
+                INSERT INTO SGA.dbo.Comprobantes_Mestra (
+                    idComprobanteElectronico, idComprobante, FechaEmision, TipoDocumento, Moneda, TipoOperacion,
+                    DocAnticipo, IdDocumento, Gravadas, Gratuitas, Inafectas, Exoneradas,
+                    DescuentoGlobal, TotalVenta, TotalIgv, TotalIsc, TotalOtrosTributos, MontoEnLetras,
+                    PlacaVehiculo, MontoPercepcion, MontoDetraccion, Estadosunat, CalculoIGV, CalculoISC,
+                    CalculoDetraccion, ETipoDocumento, ENroDocumento, ENombreLegal, ENombreComercial, EUbigeo,
+                    EDireccion, EUrbanizacion, RTipoDocumento, RNroDocumento, RNombreLegal, RNombreComercial,
+                    RUbigeo, RDireccion, RUrbanizacion, TipoDocumento_REL, NroDocumento_REL, NroReferencia_DIS,
+                    Tipo_DIS, Descripcion_DIS
+                )
+                VALUES (
+                    '', '', '', '', '', '',
+                    '', '', '', '', '', '',
+                    '', '', '', '', '', '',
+                    '', '', '', '', '', '',
+                    '', '', '', '', '', '',
+                    '', '', '', '', '', '',
+                    '', '', '', '', '', '',
+                    '', ''
+                )
 
                 INSERT INTO SGA.dbo.DetalleComprobante_Maestra (
-                    idComprobanteElectronico,
-                    idComprobante,
-                    Id,
-                    Cantidad,
-                    UnidadMedida,
-                    CodigoItem,
-                    Descripcion,
-                    PrecioUnitario,
-                    PrecioReferencial,
-                    TipoPrecio,
-                    TipoImpuesto,
-                    Impuesto,
-                    ImpuestoSelectivo,
-                    OtroImpuesto,
-                    Descuento,
-                    TotalVenta,
-                    Suma
+                    idComprobanteElectronico, idComprobante, Id, Cantidad, UnidadMedida, CodigoItem,
+                    Descripcion, PrecioUnitario, PrecioReferencial, TipoPrecio, TipoImpuesto, Impuesto,
+                    ImpuestoSelectivo, OtroImpuesto, Descuento, TotalVenta, Suma
                 )
-                VALUES ('')
+                VALUES (
+                    @Serie_Boleta+@numMaxBoletaChar, @usuario_serie+@numMaxOperChar, '', '', 'NIU', '01',
+                    '', 100, 0, '01', 10, 0,
+                    0, 0, 0, 104, 104
+                ), (
+                    @Serie_Boleta+@numMaxBoletaChar, @usuario_serie+@numMaxOperChar, '', '', 'NIU', '02',
+                    '', 4, 0, '01', 10, 0,
+                    0, 0, 0, 104, 104
+                )
 
                 SELECT top 10 * from sga.dbo.DetOper
+
+                SELECT * from DetalleComprobante_Maestra where idComprobanteElectronico = 'B00100071769' and idComprobante = '0013000465588'
+
+                select * from SGA.dbo.NumeracionFE where SerieElec = 'B001' and NumeroElec = '00071769'
 
                 SELECT distinct itemtransf from sga.dbo.DetOper
                 SELECT distinct  cantidad from sga.dbo.DetOper
@@ -237,7 +259,7 @@ ELSE BEGIN
                         @usuario_serie, @numMaxOperChar, '12', @Num_DI, '01', -- condonacion
                         CONVERT(smalldatetime, GETDATE(), 120), CONVERT(char(8), GETDATE(), 108), 0, 104, '1', 1, 'OBS - Condonacion deuda 2015-I a 2022-II',
                         'ADMINISTRADOR', '01', @codEspEst, @sedeEst, @programa, '0',
-                        NUll, 'B026', @numMaxBoletaChar, NULL, NULL, NULL, NULL 
+                        NUll, @Serie_Boleta, @numMaxBoletaChar, NULL, NULL, NULL, NULL 
                 );
 
             INSERT INTO SGA.dbo.DetOper
@@ -258,7 +280,8 @@ ELSE BEGIN
             );
 
             INSERT INTO SGA.dbo.NumeracionFE (SerieElec, NumeroElec, c_tipdoc, serie, dif)
-            VALUES('B026', @numMaxBoletaChar, '06', @usuario_serie, '3');
+            VALUES(@Serie_Boleta, @numMaxBoletaChar, '06', @usuario_serie, '3');
+
 
             UPDATE SGA.dbo.Usuarios SET NumOper = @numMaxOperChar, NumBoleta = @numMaxBoletaChar WHERE Serie = @usuario_serie;
 
