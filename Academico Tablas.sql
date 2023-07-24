@@ -106,7 +106,7 @@ END
 ELSE BEGIN
     IF @TotalNotasCurso = @TotalCursosMatriculados BEGIN
 
-        /* Impedidios todos los cursos que no pagaron sus cuotas */
+        
 
         -- Var obtener ultimo periodo academico de la deuda de estudiante 
         DECLARE @DeudaPeriodoMax VARCHAR(4);
@@ -121,6 +121,8 @@ ELSE BEGIN
                 deu.CondDeud IN (0,9) AND
                 deu.NumCuota in (01, 02, 03, 04, 05) AND
                 deu.NumDI = @Num_DI ) BEGIN
+
+            /* Impedidios todos los cursos que no pagaron sus cuotas */
 
             -- Var incremento numeracion_operacion
             DECLARE @numMaxOper INT;
@@ -525,8 +527,15 @@ select top 10 * from SGA.dbo.NumeracionFE where SerieElec = 'B001' and NumeroEle
 select top 10 * from SGA.dbo.Control_EnvioElect where cSerie = 'B001' and cNumero = '00071769'
 
 select top 10 * from SGA.dbo.DetalleComprobante_Maestra where idComprobanteElectronico = 'B00100071769'
+
 select top 10 * from SGA.dbo.DetalleComprobante_Maestra where idComprobanteElectronico = 'BB0100015790'
 select top 10 * from SGA.dbo.DetalleComprobante_Maestra where idComprobanteElectronico = 'B01200330454'
+
+select top 10 * from SGA.dbo.Comprobantes_Mestra where idComprobanteElectronico = 'B00100071769'
+select top 10 * from SGA.dbo.DetalleComprobante_Maestra where idComprobanteElectronico = 'B00100071769'
+
+
+
 
 SELECT top 10 * from SGA.dbo.Estado_EnvioElec
 SELECT top 10 * from SGA.dbo.FE_Estado_EnvioElec
