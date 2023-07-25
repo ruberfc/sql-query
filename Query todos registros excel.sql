@@ -1,19 +1,17 @@
+Go
 
-
-go
-
-create procedure SP_Procesos_Condonacion(
+CREATE PROCEDURE SP_PROCESO_CONDONACION(
     @codigo_est varchar(15),
-    @ciclo_acad varchar(5),
     @anio_acad char(4),
     @periodo_acad varchar(2),
     @num_cuota char(2)
+    --@ciclo_acad varchar(5),
     --@cuota_valor numeric(18,2)
 )AS
 BEGIN 
-    -- Var total notas curso
+    -- total notas curso
     DECLARE @TotalNotasCurso int;
-    -- Var Total cursos matriculados
+    -- Total cursos matriculados
     DECLARE @TotalCursosMatriculados int;
 
     DECLARE @usuarioSerie char(4) = '8888';
@@ -22,8 +20,8 @@ BEGIN
 
     SELECT @TotalNotasCurso = count(Nta_Promedio), @TotalCursosMatriculados = count(Asi_Id)
     FROM DBCampusNet.dbo.Nta_Nota
-    WHERE Mtr_Anio = @anio_acad AND --(Mtr_Anio BETWEEN '2015' AND '2022') AND -- Mtr_Anio = '2015' and
-        Mtr_Periodo = @periodo_acad AND  -- Mtr_Periodo = 1 and -- Omitir
+    WHERE Mtr_Anio = @anio_acad AND
+        Mtr_Periodo = @periodo_acad AND
         Nta_Promedio = 'im' AND
         --Nta_Seccion in ('I', 'E', 'S') and 
         Est_Id = @codigo_est;  
@@ -35,11 +33,11 @@ BEGIN
         IF @TotalNotasCurso = @TotalCursosMatriculados  AND  @TotalNotasCurso > 0 AND @TotalCursosMatriculados > 0 BEGIN
             /* Impedido todos los cursos que no pago su cuota */
 
-            -- Var deuda periodo agregar un cero delante
+            -- Periodo agregar un cero delante
             DECLARE @DeudaPeriodoA char(2);
             SET @DeudaPeriodoA = CONCAT('0', @periodo_acad);
 
-            -- Var deuda numero cuota agregar un cero delante
+            -- Pumero cuota agregar un cero delante
             DECLARE @DeudaNumCuota char(2);
             SET @DeudaNumCuota = CONCAT('0', @num_cuota);
 
@@ -53,30 +51,32 @@ BEGIN
                             deu.CondDeud in (0,9) AND
                             deu.NumDI = @codigo_est ) BEGIN
 
+            
+
                 /* Impedidios todos los cursos que no pagaron sus cuotas */
 
-                 -- Var incremento numeracion_operacion
+                 -- Incremento numeracion_operacion
                 DECLARE @NumOper INT;
                 SELECT @NumOper = CONVERT(INT, NumOper) FROM SGA.dbo.Usuarios WHERE Serie = @usuarioSerie;
                 SET @NumOper = @NumOper + 1;   
 
-                 -- Var conversion a char numeracion_operacion
+                 -- Conversion a char numeracion_operacion
                 DECLARE @NumOperChar CHAR(9);
                 SET @NumOperChar = RIGHT('000000000' + LTRIM(RTRIM(CONVERT(CHAR(9), @NumOperChar ))), 9);
 
-                 -- Var especialidad estudiante
+                 -- Especialidad estudiante
                 DECLARE @CodEspEst VARCHAR(4);
                 SELECT top 1 @CodEspEst = CodEspe FROM SGA.dbo.Clientes WHERE Cli_NumDoc = @codigo_est;
 
-                -- Var Sede estudio estudiante
+                -- Sede estudio estudiante
                 DECLARE @SedeEst VARCHAR(2);
                 SELECT @SedeEst = Sed_Id FROM SGA.dbo.Clientes WHERE Cli_NumDoc = @codigo_est;
 
-                -- Var Programa  de modalidad academica
+                -- Programa  de modalidad academica
                 DECLARE @Programa char(2);
                 SELECT top 1 @Programa = MAC_id FROM SGA.dbo.Clientes WHERE Cli_NumDoc = @codigo_est;
 
-                -- Var numeracion_boleta
+                -- Numeracion_boleta
                 DECLARE @NumBoletaChar char(4);
                 SELECT @NumBoletaChar = NumeroElec FROM SGA.dbo.NumeracionFE WHERE serie = @usuarioSerie AND SerieElec = @serieBoleta;
 
@@ -94,7 +94,9 @@ BEGIN
                     NUll, @serieBoleta, @NumBoletaChar, NULL, NULL, NULL, NULL 
                 );
 
-                -- Var serie, numeracion, codContab deuda
+                
+
+                -- Serie, numeracion y codContab deuda
                 DECLARE @DeudaSerie CHAR(4);
                 DECLARE @DeudaNum CHAR(8);
                 DECLARE @DeudaCodContab char(14);
@@ -164,7 +166,7 @@ BEGIN
                     0, 0, 0, 104, 104
                 )
 
-                -- Var 
+                -- NewNumBoleta INT y NewNumBoletaChar CHAR(9) 
                 DECLARE @NewNumBoleta INT, @NewNumBoletaChar char(9);
                 SET @NewNumBoleta = CAST(@NumBoletaChar AS INT) + 1;
                 SET @NewNumBoletaChar = RIGHT('000000000' + LTRIM(RTRIM(CONVERT(CHAR(9), @NewNumBoleta ))), 9);
@@ -173,7 +175,14 @@ BEGIN
 
                 UPDATE SGA.dbo.Usuarios SET NumOper = @NumOperChar WHERE Serie = @usuarioSerie;
 
+
+                select top 100 * from SGA.dbo.Notas_Cred_Deb where SeriOper = '8888'
+
+                select top 100 * from SGA.dbo.NumeracionFE where serie = '8888' and SerieElec = 'BA26'  
+
+
                 
+
                 
                 RETURN ''
 
@@ -187,6 +196,7 @@ BEGIN
             RETURN 'No se hiso impedir en todos los cursos'
         END
     END
+
 
 END
 
@@ -304,16 +314,202 @@ SET @DiasDiferencia = DATEDIFF(day, '2018-04-30', '2018-05-08')
 SELECT @DiasDiferencia  * 0.0005 AS DiferenciaEnDias
 
 
+-- deudas de estudiante
+select * from SGA.dbo.Deudas deu 
+where   deu.[AñoAcad] = '2015' AND
+        deu.PeriAcad = '02' AND
+        deu.NumCuota = '04' AND
+        deu.CondDeud in (0,9) AND
+        deu.NumDI = 'A621524'
+
+-- serie y numeracion deuda
+DECLARE @SerieDeuda char(4), @NumeracionDeuda char(8)
+select 
+    @SerieDeuda = SeriDeud,
+    @NumeracionDeuda = NumDeud
+from SGA.dbo.Deudas deu 
+where   deu.[AñoAcad] = '2015' AND
+        deu.PeriAcad = '02' AND
+        deu.NumCuota = '04' AND
+        deu.CondDeud in (0,9) AND
+        deu.NumDI = 'A621524'
+        --deu.NumDI = 'f10102e'
+
+-- SELECT @SerieDeuda, @NumeracionDeuda
+
+-- SerieOper, NumOper y DocRef
+DECLARE  @SerieOperacion char(4), @NumeracionOperacion char(9), @DocRefDetalleOper char(12)
+SELECT @SerieOperacion = SeriOper, @NumeracionOperacion = NumOper, @DocRefDetalleOper = DocRef from SGA.dbo.DetOper
+where DocRef = @SerieDeuda+@NumeracionDeuda
+
+-- SELECT @SerieOperacion, @NumeracionOperacion, @DocRefDetalleOper
+
+update SGA.dbo.Deudas SET CondDeud = '1' 
+
+select top 10 * from SGA.dbo.Deudas 
+
+select distinct CondDeud from SGA.dbo.Deudas
+SELECT * FROM SGA.dbo.CondDeud 
 
 
 
-        
-        
+Update SGA.dbo.Deudas SET CondDeud = '2', DocCanc = @SerieOperacion+@NumeracionOperacion
+WHERE   [AñoAcad] = '2015' AND
+        PeriAcad = '02' AND
+        NumCuota = '04' AND
+        CondDeud in (0,9) AND
+        NumDI = 'A621524'
 
-        
+
+SELECT top 10 * from SGA.dbo.Operacion where NumDI = 'f10102e' and (FecOper BETWEEN '2018-01-01' and '2018-12-31') and TipOper = '00'
+
+SELECT * from TipOper
+SELECT * from CondDeud
+
+
+SELECT o.SeriOper, o.NumOper, o.Declarado_Sunat, o.TotOper, do.item
+FROM SGA.dbo.Operacion o
+INNER JOIN SGA.dbo.DetOper do on o.SeriOper = do.SeriOper AND o.NumOper = do.NumOper
+WHERE 
+        do.[AñoAcad] = @maxAnioPagoCuotas AND
+        o.NumDI = @Num_DI AND
+        do.NumCuota in ('01', '02', '03', '04', '05');
+
+
+SELECT top 10 * from SGA.dbo.Deudas
+where   
+        AñoAcad = '2015' AND
+        PeriAcad = '01' AND
+        NumCuota in ('01', '02', '03', '04', '05') AND
+        CondDeud in (0, 9) and
+        NumDI = 'A20362F'
+
+-- serie numeracion deuda
+-- 8888 00855589
+--      00855590
+
+
+select top 100 * from SGA.dbo.DetOper do
+INNER JOIN SGA.dbo.Operacion o on do.SeriOper = o.SeriOper and do.NumOper = o.NumOper
+WHERE   o.NumDI = 'A20362F' AND
+        do.AñoAcad = '2018' AND
+        do.PeriAcad = '01' AND
+        do.NumCuota in ('01', '02', '03', '04', '05')
+        -- o.NumDI = 'A621524'
+
+
+SELECT top 10 * from SGA.dbo.Operacion
+where   NumDI = 'A621524' AND
+        FecOper BETWEEN '2015-08-01' AND '2015-12-31'
+
+select top 10 * from SGA.dbo.DetOper WHERE DocRef = '888800855590'
+
+
+select top 10 * from SGA.dbo.Comprobantes_Mestra WHERE idComprobante = '888801779070'
+
+
+-- DEUDA GENERADA A ESTUDIANTE
+
+SELECT top 100 * from SGA.dbo.Deudas
+where   
+        AñoAcad = '2019' AND
+        PeriAcad = '02' AND
+        NumCuota = '01' AND -- in ('01', '02', '03', '04', '05') AND
+        CondDeud in (0, 9) and
+        NumDI = 'A50380B'
+
+-- serie y numeracion de deuda
+/*  
+
+    -- A621524 --
+
+    8888 00855589  
+    8888 00855590
+    8888 00855591
+    8888 00855592
+
+
+    -- A20362F --
+
+    8888 01779070
+    8888 01779071
+
+
+    -- A50380B --
+
+    8888 02217487 -
+    8888 02217488
+    8888 02217489
+    8888 02217490
+    8888 02217491
+
+*/
+
+-- COMPROBANTE GENERADO A ESTUDIANTE
+SELECT top 100 * from SGA.dbo.Comprobantes_Mestra WHERE idComprobante = '888802217487'
+SELECT top 100 * from SGA.dbo.DetalleComprobante_Maestra WHERE idComprobante = '888802217487'
+
+-- OPERACION GENERADA
+SELECT top 10 * from SGA.dbo.Operacion where Serie_FE+Numero_FE = 'B01200598963'
+SELECT top 10 * from SGA.dbo.DetOper where DocRef = 'B01200598963'
+
+-- Comprobantes fisicos
+SELECT top 100 * from SGA.dbo.Num_fisica WHERE serie = '8888' and numdeud = '00855589'
+SELECT top 100 * from SGA.dbo.Num_fisica where numdeud like '8%'
 
 
 
+/**/
+-- Serie y Numeracion de Deuda
+DECLARE @SerieDeu char(4), @NumeracionDeu char(8)
 
-               
+SELECT @SerieDeu = SeriDeud, @NumeracionDeu = NumDeud from SGA.dbo.Deudas
+where   
+        AñoAcad = '2019' AND
+        PeriAcad = '02' AND
+        NumCuota = '01' AND -- in ('01', '02', '03', '04', '05') AND
+        CondDeud in (0, 9) and
+        NumDI = 'A50380B'
+
+SELECT @SerieDeu, @NumeracionDeu
+
+SELECT * from SGA.dbo.DetOper where DocRef = '888802217487' 
+SELECT * from SGA.dbo.Comprobantes_Mestra where idComprobante = '888802217487' 
+
+SELECT top 10 * from SGA.dbo.PlanContab where c_cuen = '1273013'
+
+--DECLARE @IdComprobanteElectronico VARCHAR(20);
+--SELECT  @IdComprobanteElectronico = idComprobanteElectronico from SGA.dbo.Comprobantes_Mestra where  idComprobante = @SerieDeu+@NumeracionDeu
+
+IF EXISTS (SELECT * from SGA.dbo.Comprobantes_Mestra where  idComprobante = @SerieDeu+@NumeracionDeu) BEGIN
+    select 'Existe'
+END
+ELSE BEGIN 
+    SELECT 'No Existe'
+END
+
+go
+
+
+SELECT top 10 * from SGA.dbo.Control_EnvioElect WHERE cSerie+cNumero = @IdComprobanteElectronico
+
+SELECT top 10 * from SGA.dbo.Control_EnvioElect
+
+SELECT distinct Estadosunat from SGA.dbo.Comprobantes_Mestra
+
+IF EXISTS (SELECT top 100 * from SGA.dbo.Deudas
+            WHERE   
+                    AñoAcad = '2015' AND
+                    PeriAcad = '02' AND
+                    NumCuota in ('01', '02', '03', '04', '05') AND
+                    CondDeud in (0, 9) and
+                    NumDI = 'A621524') BEGIN 
+
+    PRINT 'EXISTE'
+    
+END
+ELSE BEGIN 
+    PRINT 'NO EXISTE'
+END
+
 
