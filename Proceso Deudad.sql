@@ -51,14 +51,21 @@ BEGIN
                     CondDeud in (0, 9) and
                     NumDI = @codigo_est;
             
-             -- Incremento numeracion_operacion
+            -- Numeracion Operacion
             DECLARE @NumOperChar CHAR(9);
             SELECT @NumOperChar = NumOper FROM SGA.dbo.Usuarios WHERE Serie = @usuarioSerie;
             --SELECT @NumOperChar =  RIGHT('000000000' + LTRIM(RTRIM(CONVERT(CHAR(9), CONVERT(BIGINT, NumOper) + 1 ))), 9) FROM SGA.dbo.Usuarios WHERE Serie = @usuarioSerie;
 
 
+            -- Especialidad, Sede y Programa
+            DECLARE @CodEspEst VARCHAR(4), @SedeEst VARCHAR(2), @Programa CHAR(2);
+            SELECT top 1 @CodEspEst = CodEspe, @SedeEst = sed_id, @Programa = MAC_id  FROM SGA.dbo.Clientes WHERE Cli_NumDoc = @codigo_est;
+
+
             IF EXISTS(SELECT * from SGA.dbo.Comprobantes_Mestra where  idComprobante = @DeudaSerie+@DeudaNumeracion ) BEGIN 
-                        -- SELECT  * from SGA.dbo.PensionesxCobrar WHERE SeriDeud = '8888' and NumDeud = '00855589' and Comprobante like 'B%'
+            -- SELECT  * from SGA.dbo.PensionesxCobrar WHERE SeriDeud = '8888' and NumDeud = '00855589'
+            -- SELECT  * from SGA.dbo.PensionesxCobrar WHERE Comprobante like 'B%'
+
                 /* Existe Comprobante creado */
                 
                 -- IdComprobanteElectronico y TotalVenta de Comprobantes_Mestra
@@ -70,122 +77,60 @@ BEGIN
                 SELECT  @IdComprobanteElectronico = idComprobanteElectronico, @TotalVenta=TotalVenta  FROM SGA.dbo.Comprobantes_Mestra where idComprobante = @DeudaSerie+@DeudaNumeracion;
                 SELECT  @OperSerie = SeriOper, @OperNumeracion = NumOper from SGA.dbo.Operacion where Serie_FE+Numero_FE =  @IdComprobanteElectronico;
 
-                -- Numeracion Nota credito char
+                -- Numeracion Nota credito
                 DECLARE @NumNotaCreditoChar char(8);
                 SELECT @NumNotaCreditoChar = NumeroElec FROM SGA.dbo.NumeracionFE WHERE serie = @usuarioSerie AND SerieElec = @serieNotaCredito;
+        
 
-                -- Especialidad estudiante
-                DECLARE @CodEspEst VARCHAR(4);
-                SELECT top 1 @CodEspEst = CodEspe FROM SGA.dbo.Clientes WHERE Cli_NumDoc = @codigo_est;
-
-                -- Sede estudio estudiante
-                DECLARE @SedeEst VARCHAR(2);
-                SELECT @SedeEst = Sed_Id FROM SGA.dbo.Clientes WHERE Cli_NumDoc = @codigo_est;
-
-                -- Programa  de modalidad academica
-                DECLARE @Programa char(2);
-                SELECT top 1 @Programa = MAC_id FROM SGA.dbo.Clientes WHERE Cli_NumDoc = @codigo_est;
-
-                
                 INSERT INTO SGA.dbo.Operacion
                 (
                     SeriOper,NumOper,TipDI,NumDI,TipOper,
                     FecOper,HoraOper,AnulOper,TotOper,TipMoneda,TipCambio,Observac,
                     Usuario,TipDoc,Codespe,sede,programa,NumComFisico,
-                    Cod_AfectaIGV,Serie_FE,Numero_FE,Tip_DocumentoTrib,Declarado_Sunat,Correlativo_Baja,Rechazado_Sunat)
-                VALUES
-                (
-                    @usuarioSerie, @NumOperChar, '12', @codigo_est, '01', -- condonacion
-                    CONVERT(smalldatetime, GETDATE(), 120), CONVERT(char(8), GETDATE(), 108), 0, -@TotalVenta, '1', 1, 'OBS - Condonacion deuda 2015-I a 2022-II',
-                    'ADMINISTRADOR', '01', @CodEspEst, @SedeEst, @Programa, '0',
-                    30, @serieNotaCredito, @NumNotaCreditoChar, 'NC', NULL, NULL, NULL
-                );
-
-                /* Cursor detalle de operacion nota credito*/
-
-                select top 100 * from SGA.dbo.DetOper where Comprobante like 'BA%' and SeriOper = '8888'
-
-                select distinct TipoComp from SGA.dbo.DetOper where Comprobante like 'BA%' and SeriOper = '8888'
-
-                SELECT TOP 10 * FROM SGA.dbo.TipoDocOper
-
-                SELECT top 10 * from SGA.dbo.Deudas where SeriDeud+NumDeud = '888801435651'
-     
-                DECLARE CUR_DETOPER_NOTA_C  CURSOR FOR   
-                SELECT Item, Importe, Comprobante
-                    FROM SGA.dbo.DetOper
-                    WHERE SeriOper = @OperSerie and NumOper = @OperNumeracion
-
-                INSERT INTO SGA.dbo.DetOper
-                (
-                    SeriOper,NumOper,item,CodContab,TipCodCont,Importe,NumCuota,AñoAcad,
-                    PeriAcad,DocRef,ImpTransf,ImpDscto,PorDscto,dFecOper,itemtransf,cantidad,
-                    codint,CondItem,TipoComp,Comprobante,Comprobante_REF,TIPDOC_REF
+                    Cod_AfectaIGV,Serie_FE,Numero_FE,Tip_DocumentoTrib,Declarado_Sunat,Correlativo_Baja,Rechazado_Sunat
                 )
                 VALUES
                 (
-                    @usuarioSerie, @NumOperChar, '6595257', @DeudaCodContab, 'D', '--', @DeudaNumCuota, @anio_acad,
-                    @DeudaPeriodoA, @DeudaSerie+@DeudaNumeracion, 0, 0, 0, CONVERT(smalldatetime, GETDATE(), 120), NULL, 1,
-                    '--', '1', '7', @serieNotaCredito+@NumNotaCreditoChar, @IdComprobanteElectronico, '3'
-                ),
-                (
-                    @usuarioSerie, @NumOperChar, '--', @DeudaCodContab, 'D', 4, @DeudaNumCuota, @anio_acad,
-                    @DeudaPeriodoA, @DeudaSerie+@DeudaNumeracion, 0, 0, 0, CONVERT(smalldatetime, GETDATE(), 120), NULL, 1,
-                    '--', '1', '7', '', '', '3'
+                    @usuarioSerie, @NumOperChar, '12', @codigo_est, '01', -- condonacion
+                    CONVERT(smalldatetime, GETDATE(), 120), CONVERT(char(8), GETDATE(), 108), 0, -@TotalVenta, '1', 1, 'RECTIFICACIÓN DE COMPROBANTE EMITIDO '+@IdComprobanteElectronico+' POR CONDONACIÓN',
+                    'ADMINISTRADOR', '--', @CodEspEst, @SedeEst, @Programa, '0',
+                    30, @serieNotaCredito, @NumNotaCreditoChar, 'NC', NULL, NULL, NULL
                 );
 
-                select top 10 * from SGA.dbo.PlanContab where c_cuen = '6595257'
 
+                /* Cursor detalle de operacion nota credito*/
+                DECLARE @Item CHAR(3), @Importe NUMERIC(15,2);
 
+                DECLARE C_DETOPER_NOTA_CREDITO  CURSOR FOR   
+                SELECT Item, Importe
+                    FROM SGA.dbo.DetOper
+                    WHERE SeriOper = @OperSerie and NumOper = @OperNumeracion;
 
-                SELECT distinct TipDoc from SGA.dbo.Operacion
-                
+                OPEN C_DETOPER_NOTA_CREDITO;
+    
+                FETCH NEXT FROM C_DETOPER_NOTA_CREDITO INTO @Item, @Importe;
+                WHILE @@FETCH_STATUS = 0
+                BEGIN
 
-                SELECT top 10 * from SGA.dbo.Notas_Cred_Deb nc 
-                INNER JOIN SGA.dbo.Operacion o on nc.SeriOper = o.SeriOper and nc.NumOper = o.NumOper
-                where nc.Tip_Nota = 'NC' and o.NumDI = 'f10102e';
+                    INSERT INTO SGA.dbo.DetOper
+                    (
+                        SeriOper,NumOper,item,CodContab,TipCodCont,Importe,NumCuota,AñoAcad,
+                        PeriAcad,DocRef,ImpTransf,ImpDscto,PorDscto,dFecOper,itemtransf,cantidad,
+                        codint,CondItem,TipoComp,Comprobante,Comprobante_REF,TIPDOC_REF
+                    )
+                    VALUES
+                    (
+                        @usuarioSerie, @NumOperChar, @Item, '6595257', 'D', -@Importe, @DeudaNumCuota, @anio_acad,
+                        @DeudaPeriodoA, @DeudaSerie+@DeudaNumeracion, 0, 0, 0, CONVERT(smalldatetime, GETDATE(), 120), NULL, 1,
+                        '--', '1', '7', @serieNotaCredito+@NumNotaCreditoChar, @IdComprobanteElectronico, '3'
+                    );
 
-                SELECT top 10 * from SGA.dbo.DetOper where SeriOper = '0013' and NumOper = '000380847'
-                
-                /*
-                    SeriOper NumOper
-                    0013 000380847
+                    FETCH NEXT FROM C_DETOPER_NOTA_CREDITO INTO @Item, @Importe;
+                END
 
-                    SeriOpRef NumOpRef
-                    0002 000734757
-                */
+                CLOSE C_DETOPER_NOTA_CREDITO;
+                DEALLOCATE C_DETOPER_NOTA_CREDITO;
 
-                SELECT top 10 * from SGA.dbo.Operacion WHERE SeriOper = '0013' and NumOper = '000380847'
-                SELECT top 10 * from SGA.dbo.DetOper WHERE SeriOper = '0013' and NumOper = '000380847'
-
-                SELECT * from SGA.dbo.Operacion WHERE SeriOper = '0002' and NumOper = '000734757'
-                SELECT * from SGA.dbo.DetOper WHERE SeriOper = '0002' and NumOper = '000734757'
-                
-
-                SELECT top 10 * from SGA.dbo.Comprobantes_Mestra WHERE IdDocumento = 'B01000023079' or idComprobanteElectronico = 'B01000023079'
-                SELECT top 10 * from SGA.dbo.Control_EnvioElect where cSerie+cNumero = 'B01000023079'
-
-                SELECT top 10 * from SGA.dbo.Control_EnvioElect_back where cSerie+cNumero = 'B01000023079'
-
-                SELECT top 10 * from SGA.dbo.Comprobantes_Mestra where idComprobanteElectronico = 'B01000023079'
-                SELECT top 10 * from SGA.dbo.DetalleComprobante_Maestra where idComprobanteElectronico = 'B01000023079'
-
-                select top 10 * from SGA.dbo.Deudas WHERE DocCanc = '0002000734757'
-
-                select top 10 * from SGA.dbo.PensionesxCobrar WHERE Comprobante = 'B01000023079'
-
-
-                --SELECT top 10 * from SGA.dbo.
-
-                SELECT TOP 10 * FROM PensionesxCobrar WHERE Comprobante = 'B01000023079'
-                SELECT top 10 * from SGA.dbo.Deudas where SeriDeud+NumDeud = '888801249954'
-
-                SELECT * from SGA.dbo.PlanContab where c_cuen = '7412010'
-
-                SELECT  distinct Tip_DocumentoTrib from SGA.dbo.Operacion WHERE SeriOper = '0100' and NumOper = '000044209'
-
-
-                
                 INSERT INTO SGA.dbo.Notas_Cred_Deb (
                     SeriOper,NumOper,Fecha_Emision,Serie_Nota,Numero_Nota,Motivo,
                     Importe_Total,Tip_Nota,Cod_NotaCredDeb,Item,SeriOpRef,NumOpRef
@@ -196,52 +141,32 @@ BEGIN
                     @TotalVenta, 'NC', '01', '01', @OperSerie, @OperNumeracion
                 );
                 
-
-
                 UPDATE SGA.dbo.NumeracionFE SET NumeroElec = RIGHT('00000000' + LTRIM(RTRIM(CONVERT(CHAR(8), CONVERT(BIGINT, @NumNotaCreditoChar) + 1 ))), 8)where Serie = @usuarioSerie AND SerieElec =  @serieNotaCredito;
 
                 UPDATE SGA.dbo.Usuarios Set NumOper = RIGHT('000000000' + LTRIM(RTRIM(CONVERT(CHAR(9), CONVERT(BIGINT, @NumOperChar) + 1 ))), 9)  Where Serie = @usuarioSerie;
 
+
             END
             ELSE BEGIN
-                
-                -- Incremento numeracion_operacion
-                -- DECLARE @NumOper INT;
-                -- SELECT @NumOper = CONVERT(INT, NumOper) FROM SGA.dbo.Usuarios WHERE Serie = @usuarioSerie;
-                -- SET @NumOper = @NumOper + 1;   
 
-                 -- Conversion a char numeracion_operacion
-                -- DECLARE @NumOperChar CHAR(9);
-                -- SET @NumOperChar = RIGHT('000000000' + LTRIM(RTRIM(CONVERT(CHAR(9), @NumOperChar ))), 9);
-
-                -- Especialidad estudiante
-                DECLARE @CodEspEst VARCHAR(4);
-                SELECT top 1 @CodEspEst = CodEspe FROM SGA.dbo.Clientes WHERE Cli_NumDoc = @codigo_est;
-
-                -- Sede estudio estudiante
-                DECLARE @SedeEst VARCHAR(2);
-                SELECT @SedeEst = Sed_Id FROM SGA.dbo.Clientes WHERE Cli_NumDoc = @codigo_est;
-
-                -- Programa  de modalidad academica
-                DECLARE @Programa char(2);
-                SELECT top 1 @Programa = MAC_id FROM SGA.dbo.Clientes WHERE Cli_NumDoc = @codigo_est;
-
-                -- Numeracion_boleta
+                -- Numeracion boleta
                 DECLARE @NumBoletaChar char(4);
                 SELECT @NumBoletaChar = NumeroElec FROM SGA.dbo.NumeracionFE WHERE serie = @usuarioSerie AND SerieElec = @serieBoleta;
+
 
                 INSERT INTO SGA.dbo.Operacion
                 (
                     SeriOper,NumOper,TipDI,NumDI,TipOper,
                     FecOper,HoraOper,AnulOper,TotOper,TipMoneda,TipCambio,Observac,
                     Usuario,TipDoc,Codespe,sede,programa,NumComFisico,
-                    Cod_AfectaIGV,Serie_FE,Numero_FE,Tip_DocumentoTrib,Declarado_Sunat,Correlativo_Baja,Rechazado_Sunat)
+                    Cod_AfectaIGV,Serie_FE,Numero_FE,Tip_DocumentoTrib,Declarado_Sunat,Correlativo_Baja,Rechazado_Sunat
+                )
                 VALUES
                 (
                     @usuarioSerie, @NumOperChar, '12', @codigo_est, '01', -- condonacion
                     CONVERT(smalldatetime, GETDATE(), 120), CONVERT(char(8), GETDATE(), 108), 0, 104, '1', 1, 'OBS - Condonacion deuda 2015-I a 2022-II',
-                    'ADMINISTRADOR', '01', @CodEspEst, @SedeEst, @Programa, '0',
-                    NUll, @serieBoleta, @NumBoletaChar, NULL, NULL, NULL, NULL 
+                    'ADMINISTRADOR', '--', @CodEspEst, @SedeEst, @Programa, '--',
+                    '30', @serieBoleta, @NumBoletaChar, 'BV', NULL, NULL, NULL 
                 );
 
                 INSERT INTO SGA.dbo.DetOper
@@ -262,7 +187,20 @@ BEGIN
                     '', '1', '3', '', '', '3'
                 );
 
-                UPDATE SGA.dbo.Usuarios Set NumOper = RIGHT('000000000' + LTRIM(RTRIM(CONVERT(CHAR(9), CONVERT(BIGINT, @NumOperChar) + 1 ))), 9)  Where Serie = @usuarioSerie
+                select * from SGA.dbo.PlanContab where l_cuen like '%TRAMITE%'
+
+                SELECT top 10 * from SGA.dbo.Operacion o 
+                INNER JOIN SGA.dbo.DetOper do on o.SeriOper = do.SeriOper and o.NumOper = do.NumOper
+                where o.TipOper = '01' and 
+                        o.Tip_DocumentoTrib = 'NC'
+                
+                select * from TipOper
+                SELECT * from TDo_TipDocumento
+
+
+
+
+                UPDATE SGA.dbo.Usuarios Set NumOper = RIGHT('000000000' + LTRIM(RTRIM(CONVERT(CHAR(9), CONVERT(BIGINT, @NumOperChar) + 1 ))), 9)  Where Serie = @usuarioSerie;
 
             END
 
@@ -350,4 +288,119 @@ select top 100 * from SGA.dbo.TipoNotaCredito
 
 -- select NumOper from SGA.dbo.Usuarios where Serie = '8888'
 -- SELECT Max(NumOper) from SGA.dbo.Operacion where SeriOper = '8888'
+
+ select top 10 * from SGA.dbo.PlanContab where c_cuen = '6595257'
+select top 10 * from SGA.dbo.PlanContab where c_cuen = '6595258'
+SELECT distinct TipDoc from SGA.dbo.Operacion
+
+SELECT top 10 * from SGA.dbo.Notas_Cred_Deb nc 
+INNER JOIN SGA.dbo.Operacion o on nc.SeriOper = o.SeriOper and nc.NumOper = o.NumOper
+where nc.Tip_Nota = 'NC' and o.NumDI = 'f10102e';
+
+SELECT top 10 * from SGA.dbo.DetOper where SeriOper = '0013' and NumOper = '000380847'
+
+/*
+    SeriOper NumOper
+    0013 000380847
+
+    SeriOpRef NumOpRef
+    0002 000734757
+*/
+
+SELECT top 10 * from SGA.dbo.Operacion WHERE SeriOper = '0013' and NumOper = '000380847'
+SELECT top 10 * from SGA.dbo.DetOper WHERE SeriOper = '0013' and NumOper = '000380847'
+
+SELECT * from SGA.dbo.Operacion WHERE SeriOper = '0002' and NumOper = '000734757'
+SELECT * from SGA.dbo.DetOper WHERE SeriOper = '0002' and NumOper = '000734757'
+
+
+SELECT top 10 * from SGA.dbo.Comprobantes_Mestra WHERE IdDocumento = 'B01000023079' or idComprobanteElectronico = 'B01000023079'
+SELECT top 10 * from SGA.dbo.Control_EnvioElect where cSerie+cNumero = 'B01000023079'
+
+SELECT top 10 * from SGA.dbo.Control_EnvioElect_back where cSerie+cNumero = 'B01000023079'
+
+SELECT top 10 * from SGA.dbo.Comprobantes_Mestra where idComprobanteElectronico = 'B01000023079'
+SELECT top 10 * from SGA.dbo.DetalleComprobante_Maestra where idComprobanteElectronico = 'B01000023079'
+
+select top 10 * from SGA.dbo.Deudas WHERE DocCanc = '0002000734757'
+
+select top 10 * from SGA.dbo.PensionesxCobrar WHERE Comprobante = 'B01000023079'
+
+
+--SELECT top 10 * from SGA.dbo.
+
+SELECT TOP 10 * FROM PensionesxCobrar WHERE Comprobante = 'B01000023079'
+SELECT top 10 * from SGA.dbo.Deudas where SeriDeud+NumDeud = '888801249954'
+
+SELECT * from SGA.dbo.PlanContab where c_cuen = '7412010'
+
+SELECT  distinct Tip_DocumentoTrib from SGA.dbo.Operacion WHERE SeriOper = '0100' and NumOper = '000044209'
+
+-- select top 100 * from SGA.dbo.DetOper where Comprobante like 'BA%' and SeriOper = '8888'
+
+-- select distinct TipoComp from SGA.dbo.DetOper where Comprobante like 'BA%' and SeriOper = '8888'
+
+-- SELECT TOP 10 * FROM SGA.dbo.TipoDocOper
+
+-- SELECT top 10 * from SGA.dbo.Deudas where SeriDeud+NumDeud = '888801435651'
+
+ 
+-- Numeracion operacion
+-- DECLARE @NumOper INT;
+-- SELECT @NumOper = CONVERT(INT, NumOper) FROM SGA.dbo.Usuarios WHERE Serie = @usuarioSerie;
+-- SET @NumOper = @NumOper + 1;   
+
+    -- Conversion a char numeracion_operacion
+-- DECLARE @NumOperChar CHAR(9);
+-- SET @NumOperChar = RIGHT('000000000' + LTRIM(RTRIM(CONVERT(CHAR(9), @NumOperChar ))), 9);
+
+-- Especialidad estudiante
+-- DECLARE @CodEspEst VARCHAR(4);
+-- SELECT top 1 @CodEspEst = CodEspe FROM SGA.dbo.Clientes WHERE Cli_NumDoc = @codigo_est;
+
+-- -- Sede estudio estudiante
+-- DECLARE @SedeEst VARCHAR(2);
+-- SELECT @SedeEst = Sed_Id FROM SGA.dbo.Clientes WHERE Cli_NumDoc = @codigo_est;
+
+-- -- Programa  de modalidad academica
+-- DECLARE @Programa char(2);
+-- SELECT top 1 @Programa = MAC_id FROM SGA.dbo.Clientes WHERE Cli_NumDoc = @codigo_est;
+
+
+SELECT distinct Declarado_Sunat from SGA.dbo.Operacion
+SELECT * from SGA.dbo.TipAfectaIGV
+SELECT * from SGA.dbo.Operacion o 
+INNER JOIN SGA.dbo.DetOper do on o.SeriOper = do.SeriOper  and o.NumOper = do.NumOper
+WHERE o.NumDI = 'f10102e' AND
+        do.NumCuota = '01' AND
+        do.PeriAcad = '01' AND
+        do.[AñoAcad] = '2018' AND
+        o.SeriOper = '0002' AND o.NumOper = '001075903'
+
+SELECT * from SGA.dbo.DetOper do
+WHERE do.NumCuota = '01' AND
+        do.PeriAcad = '01' AND
+        do.[AñoAcad] = '2018' AND
+        do.SeriOper = '0002' AND do.NumOper = '001075903'
+
+SELECT * from SGA.dbo.Operacion o
+WHERE o.SeriOper = '0002' AND o.NumOper = '001075903'
+
+SELECT distinct TipDoc From SGA.dbo.Operacion
+SELECT * From SGA.dbo.TipOper
+SELECT * From SGA.dbo.TipDcto
+SELECT * From SGA.dbo.TipDscto
+SELECT * From SGA.dbo.TipoDocOper
+
+SELECT top 100 * from SGA.dbo.PensionesxCobrar WHERE Comprobante not like 'B%'
+
+select top 10 * from SGA.dbo.Comprobantes_Mestra where  idComprobante = '010500114100'
+
+SELECT top 100  * from SGA.dbo.Num_fisica  where fecha BETWEEN '2015-01-01' and '2015-12-31'
+
+SELECT * from SGA.dbo.PlanContab where c_cuen = '1255103'
+SELECT * from SGA.dbo.PlanContab where c_cuen = '1631011'
+
+
+ 
 

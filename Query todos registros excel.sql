@@ -410,11 +410,11 @@ select top 10 * from SGA.dbo.Comprobantes_Mestra WHERE idComprobante = '88880177
 
 SELECT top 100 * from SGA.dbo.Deudas
 where   
-        AñoAcad = '2022' AND
+        AñoAcad = '2015' AND
         PeriAcad = '02' AND
         NumCuota in ('01', '02', '03', '04', '05') AND
         CondDeud in (0, 9) and
-        NumDI = 'J03932K'
+        NumDI = 'A621524'
 
 -- serie y numeracion de deuda
 /*  
@@ -451,7 +451,37 @@ where
 */
 
 -- PENSIONES POR COBRAR
-SELECT top 10 * from SGA.dbo.PensionesxCobrar WHERE SeriDeud = '8888' and NumDeud = '02736461'
+SELECT top 10 * from SGA.dbo.PensionesxCobrar WHERE SeriDeud = '8888' and NumDeud = '01779070'
+
+SELECT top 10 * from SGA.dbo.Operacion WHERE Serie_FE+Numero_FE = 'B01200359217'
+
+SELECT top 10 * from SGA.dbo.Comprobantes_Mestra where idComprobanteElectronico = 'B01200359217'
+
+SELECT top 10 * from SGA.dbo.Control_EnvioElect where cSerie+cNumero = 'B01200359217'
+
+    -- Comprobantes: 1010190048, 1120126803, 1120167925, 1060011992
+
+    SELECT top 10 * from SGA.dbo.Num_fisica WHERE num_bolfac = '1010190048'
+    select top 10 * from SGA.dbo.Operacion WHERE NumComFisico = '1010190048'
+
+    select top 10 * from SGA.dbo.Operacion 
+
+/**/
+
+    SELECT top 10 * from SGA.dbo.Operacion WHERE Serie_FE+Numero_FE = 'B01200359217'
+    SELECT top 10 * from SGA.dbo.DetOper WHERE Comprobante = 'B01200919841'
+
+    SELECT top 10 * from SGA.dbo.Comprobantes_Mestra WHERE idComprobanteElectronico = 'B01200919841'
+    SELECT top 10 * from SGA.dbo.Control_EnvioElect where cSerie+cNumero = 'B01200919841'
+
+/**/
+
+select top 10 * from SGA.dbo.Operacion WHERE NumComFisico like '1060011992%'
+
+SELECT top 10 * from SGA.dbo.Num_fisica WHERE num_bolfac like '1060011992'
+SELECT top 10 * from SGA.dbo.Num_fisica WHERE serie+numoper like '1010190048'
+SELECT top 10 * from SGA.dbo.Num_fisica WHERE referencia like '%1010190048%'
+SELECT top 10 * from SGA.dbo.Comprobantes_Mestra WHERE idComprobante = '888800855589' 
 
 SELECT top 10 * from SGA.dbo.PensionesxCobrar WHERE SeriDeud = '8888' and NumDeud = '00855589'
 
@@ -552,11 +582,14 @@ select * from SGA.dbo.Comprobantes_Mestra where idComprobante = '1010185727';
 SELECT top 10 * from SGA.dbo.Operacion WHERE NumComFisico = '1010185727'
 
 Select top 10 * from SGA.dbo.PensionesxCobrar where SeriDeud = '8888' and NumDeud = '00855589'
+
+
+SELECT top 10 * from SGA.dbo.PensionesxCobrar WHERE SeriDeud = '8888' and NumDeud = '00855589'
 /*
    Comprobante --> Sin serie y numeracion de facturación
     1010190048
 */
-select top 10 * from SGA.dbo.Operacion WHERE TRIM(NumComFisico) = '1010190048'
+select top 10 * from SGA.dbo.Operacion WHERE NumComFisico = '1010190048'
 select top 10 * from SGA.dbo.DetOper
 
 select top 10 * from SGA.dbo.Operacion where TRIM(NumComFisico) = '1010190048'
@@ -571,4 +604,8 @@ SELECT top 10 * from SGA.dbo.Comprobantes_Mestra where Trim(idComprobante) = '10
 
 SELECT top 10 * from SGA.dbo.DetOper where Trim(Comprobante) = '1010190048' 
 SELECT top 10 * from SGA.dbo.DetOper where Trim(DocRef) = '1010190048'
+
+SELECT top 10 * from SGA.dbo.Comprobantes_Mestra WHERE ENroDocumento = '1010190048'
+
+SELECT top 10 * from SGA.dbo.Comprobantes_Mestra WHERE RNroDocumento = '1010190048'
 
