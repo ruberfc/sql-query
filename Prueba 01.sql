@@ -8,19 +8,18 @@ BEGIN
     DECLARE @serie_NotaCredito char(4) = 'BA26';
 
 
-    -- Var total notas curso
-    DECLARE @TotalNotasCurso int;
-    -- Var Total cursos matriculados
-    DECLARE @TotalCursosMatriculados int;
+    -- Total notas curso y total cursos matriculados
+    DECLARE @TotalNotasCurso BIGINT, @TotalCursosMatriculados BIGINT;
 
     
-    -- Var Obtener ultimo año de matricula del estudiante Mtr_Anio
+    -- Obtener ultimo año de matricula del estudiante Nta_Nota
     DECLARE @MatriculaAnioMax VARCHAR(4);
-    SELECT @MatriculaAnioMax = MAX(Mtr_Anio)from DBCampusNet.dbo.Nta_Nota where Est_Id =  @codigo_est
+    SELECT @MatriculaAnioMax = MAX(Mtr_Anio) from DBCampusNet.dbo.Nta_Nota where Est_Id = @codigo_est
 
-    -- Var Obtener ultimo periodo de matricula del estudiante Mtr_Periodo
+
+    -- Obtener ultimo periodo de matricula del estudiante Nta_Nota
     DECLARE @MatriculaPeriodoMax VARCHAR(4);
-    SELECT @MatriculaPeriodoMax = MAX(Mtr_Periodo) from DBCampusNet.dbo.Nta_Nota WHERE Est_Id = @codigo_est and Mtr_Anio =  @MatriculaAnioMax;
+    SELECT @MatriculaPeriodoMax = MAX(Mtr_Periodo) from DBCampusNet.dbo.Nta_Nota WHERE Est_Id = @codigo_est and Mtr_Anio = @MatriculaAnioMax;
 
 
     SELECT @TotalNotasCurso = count(Nta_Promedio), @TotalCursosMatriculados = count(Asi_Id)
@@ -50,7 +49,7 @@ BEGIN
             SELECT top 1 @CodEspEst = CodEspe, @SedeEst = sed_id, @Programa = MAC_id  FROM SGA.dbo.Clientes WHERE Cli_NumDoc = @codigo_est;
 
 
-            /* Cursor deuda Estudiante*/
+            /* Cursor deuda Estudiante */
             DECLARE @DeudaSerie CHAR(4), @DeudaNumeracion CHAR(8), @DeudaCodContab char(14), @DeudaImporte NUMERIC(15,2), @DeudaNumCuota CHAR(2);
 
             DECLARE C_DEUDA_ESTUDIANTE  CURSOR FOR   
@@ -80,6 +79,7 @@ BEGIN
                     SELECT @NumNotaCreditoChar = NumeroElec FROM SGA.dbo.NumeracionFE WHERE serie = @usuario_Serie AND SerieElec = @serie_NotaCredito;
 
 
+                    /* OPERACION NOTA CREDITO */
                     INSERT INTO SGA.dbo.Operacion
                     (
                         SeriOper,NumOper,TipDI,NumDI,TipOper,
@@ -95,6 +95,8 @@ BEGIN
                         30, @serie_NotaCredito, @NumNotaCreditoChar, 'NC', NULL, NULL, NULL
                     );
 
+
+                    /* DETALLE OPERACION NOTA CREDITO */
                     INSERT INTO SGA.dbo.DetOper
                     (
                         SeriOper,NumOper,item,CodContab,TipCodCont,Importe,NumCuota,AñoAcad,
@@ -114,9 +116,11 @@ BEGIN
                     SELECT  @OperacionSerie = SeriOper, @OperacionNumeracion = NumOper from SGA.dbo.Operacion where Serie_FE+Numero_FE =  @ComprobanteFE;
 
 
-                    INSERT INTO SGA.dbo.Notas_Cred_Deb (
-                    SeriOper,NumOper,Fecha_Emision,Serie_Nota,Numero_Nota,Motivo,
-                    Importe_Total,Tip_Nota,Cod_NotaCredDeb,Item,SeriOpRef,NumOpRef
+                    /* AGREGAR NOTA CREDITO */
+                    INSERT INTO SGA.dbo.Notas_Cred_Deb 
+                    (
+                        SeriOper,NumOper,Fecha_Emision,Serie_Nota,Numero_Nota,Motivo,
+                        Importe_Total,Tip_Nota,Cod_NotaCredDeb,Item,SeriOpRef,NumOpRef
                     )
                     VALUES
                     (
@@ -125,7 +129,7 @@ BEGIN
                     );
 
 
-                    Update SGA.dbo.Deudas SET 
+                    UPDATE SGA.dbo.Deudas SET 
                         CondDeud = '2', 
                         Observac = 'DERECHO DE CONDONACIÓN DE DEUDA', 
                         DocCanc = @ComprobanteFE, 
@@ -135,12 +139,15 @@ BEGIN
                             NumCuota = @DeudaNumCuota AND
                             CondDeud in (0,9) AND
                             NumDI = @codigo_est;
+                            -- SeriDeud = @DeudaSerie AND NumDeud = @DeudaNumeracion
+                            
 
                     UPDATE SGA.dbo.NumeracionFE SET NumeroElec = RIGHT('00000000' + LTRIM(RTRIM(CONVERT(CHAR(8), CONVERT(BIGINT, @NumNotaCreditoChar) + 1 ))), 8)where Serie = @usuario_Serie AND SerieElec =  @serie_NotaCredito;
 
                     UPDATE SGA.dbo.Usuarios Set NumOper = RIGHT('000000000' + LTRIM(RTRIM(CONVERT(CHAR(9), CONVERT(BIGINT, @NumOperChar) + 1 ))), 9)  Where Serie = @usuario_Serie;
 
                     DELETE FROM SGA.dbo.PensionesxCobrar WHERE SeriDeud = @DeudaSerie AND NumDeud = @DeudaNumeracion;
+
 
 
                 END
