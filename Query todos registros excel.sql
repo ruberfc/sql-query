@@ -42,6 +42,9 @@ BEGIN
             SET @DeudaNumCuota = CONCAT('0', @num_cuota);
 
 
+             
+
+
             IF EXISTS(select * from SGA.dbo.Operacion o 
                         INNER JOIN SGA.dbo.Deudas deu on o.SeriOper+o.NumOper = deu.DocCanc
                         WHERE 
@@ -213,9 +216,9 @@ SELECT *
         Est_Id = 'A621524' 
 
  -- Var total notas curso
-    DECLARE @TotalNotasCurso int;
-    -- Var Total cursos matriculados
-    DECLARE @TotalCursosMatriculados int;        
+-- DECLARE @TotalNotasCurso int;
+-- -- Var Total cursos matriculados
+-- DECLARE @TotalCursosMatriculados int;        
 
 SELECT @TotalNotasCurso = count(Nta_Promedio), @TotalCursosMatriculados = count(Asi_Id)
     FROM DBCampusNet.dbo.Nta_Nota
@@ -233,14 +236,24 @@ SELECT distinct [AñoAcad] from SGA.dbo.Deudas
 
 SELECT * 
         FROM SGA.dbo.Deudas deu
-            WHERE 
-        
+            WHERE
                 deu.[AñoAcad] = '2015' AND
                 deu.PeriAcad = '02' AND
                 -- (deu.[AñoAcad] BETWEEN '2015' AND '2022') AND
                 deu.CondDeud IN (0,9) AND
                 deu.NumCuota in (01, 02, 03, 04, 05) AND
                 deu.NumDI = 'A621524'
+
+
+SELECT top 10 * from SGA.dbo.PensionesxCobrar 
+where SeriDeud = '8888' and NumDeud = '00855589'
+
+SELECT top 10 * from SGA.dbo.Num_fisica where num_bolfac = '1010190048'
+SELECT top 10 * from SGA.dbo.Num_fisica where serie = '8888' and numdeud = '00855589' 
+
+SELECT top 10 * from SGA.dbo.Operacion 
+where NumComFisico = '1010190048  '
+
 
 
 select * from SGA.dbo.Deudas deu 
@@ -370,8 +383,8 @@ SELECT o.SeriOper, o.NumOper, o.Declarado_Sunat, o.TotOper, do.item
 FROM SGA.dbo.Operacion o
 INNER JOIN SGA.dbo.DetOper do on o.SeriOper = do.SeriOper AND o.NumOper = do.NumOper
 WHERE 
-        do.[AñoAcad] = @maxAnioPagoCuotas AND
-        o.NumDI = @Num_DI AND
+        --do.[AñoAcad] = @maxAnioPagoCuotas AND
+        o.NumDI = @codigo_est AND
         do.NumCuota in ('01', '02', '03', '04', '05');
 
 SELECT top 10 * from SGA.dbo.Deudas
