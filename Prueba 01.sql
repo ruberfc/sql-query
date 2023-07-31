@@ -200,6 +200,7 @@ BEGIN
 
             /* -------------------------- */
 
+            /*
 
             -- Numeracion operacion Usuarios
             DECLARE @NewNumOperChar CHAR(9);
@@ -284,9 +285,11 @@ BEGIN
                 0, 0, 0, 104, 104
             )
 
+            */
+
 
             UPDATE SGA.dbo.Usuarios Set 
-                NumOper = RIGHT('000000000' + LTRIM(RTRIM(CONVERT(CHAR(9), CONVERT(BIGINT, @NewNumOperChar) + 1 ))), 9),
+                -- NumOper = RIGHT('000000000' + LTRIM(RTRIM(CONVERT(CHAR(9), CONVERT(BIGINT, @NewNumOperChar) + 1 ))), 9),
                 NumDeud = RIGHT('000000000' + LTRIM(RTRIM(CONVERT(CHAR(9), CONVERT(BIGINT, @NewNDeudaNumeracion) + 1 ))), 9)
                 Where Serie = @usuario_Serie;
 
