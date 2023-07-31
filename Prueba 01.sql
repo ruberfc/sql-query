@@ -116,7 +116,7 @@ BEGIN
                     SELECT  @OperacionSerie = SeriOper, @OperacionNumeracion = NumOper from SGA.dbo.Operacion where Serie_FE+Numero_FE =  @ComprobanteFE;
 
 
-                    /* AGREGAR NOTA CREDITO */
+                    /* CREAR NOTA CREDITO */
                     INSERT INTO SGA.dbo.Notas_Cred_Deb 
                     (
                         SeriOper,NumOper,Fecha_Emision,Serie_Nota,Numero_Nota,Motivo,
@@ -127,6 +127,30 @@ BEGIN
                         @usuario_Serie, @NumOperChar, CONVERT(date, GETDATE(), 120), @serie_NotaCredito, @NumNotaCreditoChar, 'ANULACIÓN DE LA OPERACIÓN '+@ComprobanteFE,
                         @DeudaImporte, 'NC', '01', '01', @OperacionSerie, @OperacionNumeracion
                     );
+                    
+
+
+                    select top 10 * from SGA.dbo.Deudas
+
+                    /* OPERACION PAGO DEUDA */
+                    INSERT INTO SGA.dbo.Operacion
+                    (
+                        SeriOper,NumOper,TipDI,NumDI,TipOper,
+                        FecOper,HoraOper,AnulOper,TotOper,TipMoneda,TipCambio,Observac,
+                        Usuario,TipDoc,Codespe,sede,programa,NumComFisico,
+                        Cod_AfectaIGV,Serie_FE,Numero_FE,Tip_DocumentoTrib,Declarado_Sunat,Correlativo_Baja,Rechazado_Sunat
+                    )
+                    VALUES
+                    (
+                        @usuario_Serie, @NumOperChar, '12', @codigo_est, '01', -- condonacion
+                        CONVERT(smalldatetime, GETDATE(), 120), CONVERT(char(8), GETDATE(), 108), 0, -@DeudaImporte, '1', 1, 'RECTIFICACIÓN DE COMPROBANTE EMITIDO '+@ComprobanteFE+' POR DERECHO DE CONDONACIÓN DE DEUDA',
+                        'ADMINISTRADOR', '----', @CodEspEst, @SedeEst, @Programa, '0',
+                        30, @serie_NotaCredito, @NumNotaCreditoChar, 'NC', NULL, NULL, NULL
+                    );
+
+                    /* DETALLE OPERACION PAGO DEUDA */
+
+
 
 
                     UPDATE SGA.dbo.Deudas SET 
@@ -140,7 +164,7 @@ BEGIN
                             CondDeud in (0,9) AND
                             NumDI = @codigo_est;
                             -- SeriDeud = @DeudaSerie AND NumDeud = @DeudaNumeracion
-                            
+
 
                     UPDATE SGA.dbo.NumeracionFE SET NumeroElec = RIGHT('00000000' + LTRIM(RTRIM(CONVERT(CHAR(8), CONVERT(BIGINT, @NumNotaCreditoChar) + 1 ))), 8)where Serie = @usuario_Serie AND SerieElec =  @serie_NotaCredito;
 
@@ -148,6 +172,7 @@ BEGIN
 
                     DELETE FROM SGA.dbo.PensionesxCobrar WHERE SeriDeud = @DeudaSerie AND NumDeud = @DeudaNumeracion;
 
+                    SELECT top 10 * FROM SGA.dbo.Operacion
 
 
                 END

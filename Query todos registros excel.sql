@@ -533,7 +533,7 @@ SELECT top 10 * from SGA.dbo.Control_EnvioElect where cSerie+cNumero = 'B0120035
 SELECT top 10 * from SGA.dbo.Num_fisica WHERE num_bolfac = '1010190048'
 select top 10 * from SGA.dbo.Operacion WHERE NumComFisico = '1010190048'
 
-select top 10 * from SGA.dbo.Operacion 
+select top 10 * from SGA.dbo.Operacion
 
 /* */
 
