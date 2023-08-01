@@ -225,6 +225,7 @@ inner JOIN SGA.dbo.Operacion o on do.SeriOper = o.SeriOper and do.NumOper = o.Nu
 where o.NumDI = 'f10102e' and do.AñoAcad = 2018
 
 select top 100 * from SGA.dbo.TipDcto
+
 select top 100 * from SGA.dbo.TipDscto
 select top 100 * from SGA.dbo.TipoDocOper
 
