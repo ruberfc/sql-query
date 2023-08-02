@@ -436,11 +436,13 @@ where
         Nta_Promedio = 'im' AND
         Est_Id = 'D10061I';
 
-        -- AñoAcad = '2017' AND
-        -- PeriAcad = '01' AND
-        -- NumCuota in ('01', '02', '03', '04', '05') AND
-        -- CondDeud in (0, 9) and
-        -- NumD = 'D10061I'
+SELECT top 100 * from SGA.dbo.Deudas
+where 
+        AñoAcad = '2017' AND
+        PeriAcad = '01' AND
+        NumCuota in ('01', '02', '03', '04', '05') AND
+        CondDeud in (0, 9) and
+        NumDI = 'D10061I'
         
 
 -- serie y numeracion de deuda
@@ -456,8 +458,8 @@ where
     8888 01779070
     8888 01779071
 
-    -- A50380B --
-    8888 02217487 -
+    -- A50380B -- 
+    8888 02217487 
     8888 02217488
     8888 02217489
     8888 02217490
@@ -476,6 +478,13 @@ where
     8888 02533078
     8888 02533079
     8888 02533080
+
+    -- D10061I --
+    8888 01349117
+    8888 01349118
+    8888 01349119
+    8888 01349120
+    8888 01349121
 */
 
 /* PENSIONES POR COBRAR */
@@ -809,6 +818,9 @@ select top 10 * from SGA.dbo.Control_EnvioElect where cSerie+cNumero = 'B0120077
 
 select top 10 * from SGA.dbo.DetOper where Comprobante = 'B01200778634'
 select top 10 * from SGA.dbo.Comprobantes_Mestra where idComprobante = '888802440034'
+select top 10 * from SGA.dbo.Comprobantes_Mestra where idComprobanteElectronico = 'B01200778634'
+select top 10 * from SGA.dbo.DetalleComprobante_Maestra where idComprobanteElectronico = 'B01200778634'
 
 select top 10 * from SGA.dbo.Deudas where SeriDeud+NumDeud = '888802440034' 
+
 

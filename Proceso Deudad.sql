@@ -194,8 +194,8 @@ BEGIN
                 where o.TipOper = '01' and 
                         o.Tip_DocumentoTrib = 'NC'
                 
-                select * from TipOper
-                SELECT * from TDo_TipDocumento
+                select * from SGA.dbo.TipOper
+                SELECT * from SGA.dbo.TDo_TipDocumento
 
 
 
@@ -244,6 +244,7 @@ select distinct condItem from SGA.dbo.PensionesxCobrar
 select distinct TipoComp from SGA.dbo.PensionesxCobrar
 select distinct Declarado_Sunat from SGA.dbo.PensionesxCobrar
 select distinct TipoAfecta from SGA.dbo.PensionesxCobrar
+
 
 
 SELECT top 10 * from SGA.dbo.Control_EnvioElect
@@ -330,7 +331,7 @@ select top 10 * from SGA.dbo.PensionesxCobrar WHERE Comprobante = 'B01000023079'
 
 --SELECT top 10 * from SGA.dbo.
 
-SELECT TOP 10 * FROM PensionesxCobrar WHERE Comprobante = 'B01000023079'
+SELECT TOP 10 * FROM SGA.dbo.PensionesxCobrar WHERE Comprobante = 'B01000023079'
 SELECT top 10 * from SGA.dbo.Deudas where SeriDeud+NumDeud = '888801249954'
 
 SELECT * from SGA.dbo.PlanContab where c_cuen = '7412010'
@@ -403,5 +404,106 @@ SELECT * from SGA.dbo.PlanContab where c_cuen = '1255103'
 SELECT * from SGA.dbo.PlanContab where c_cuen = '1631011'
 
 
+SELECT top 100 * from SGA.dbo.Deudas
+where 
+        AñoAcad = '2017' AND
+        PeriAcad = '01' AND
+        NumCuota in ('01', '02', '03', '04', '05') AND
+        CondDeud in (0, 9) and
+        NumDI = 'D10061I'
+/*
+    -- D10061I --
+    8888 01349117
+    8888 01349118
+    8888 01349119
+    8888 01349120
+    8888 01349121
+*/
+
+
+select top 10 * from SGA.dbo.PensionesxCobrar where SeriDeud = '8888' and NumDeud = '01349117' -- B01200051465
+select top 10 * from SGA.dbo.Comprobantes_Mestra where IdDocumento  = 'B01200051465' or idComprobanteElectronico = 'B01200051465'
+select top 10 * from SGA.dbo.DetalleComprobante_Maestra where idComprobanteElectronico  = 'B01200051465'
+SELECT top 10 * from SGA.dbo.Control_EnvioElect where cSerie+cNumero = 'B01200051465'
+
+select top 10 * from SGA.dbo.Operacion where Serie_FE+Numero_FE = 'B01200051465' -- PC01 000051470
+select top 10 * from SGA.dbo.DetOper where Comprobante = 'B01200051465' 
+
+select top 10 * from SGA.dbo.Operacion where SeriOper = 'PC01' and NumOper = '000051470' 
+select top 10 * from SGA.dbo.DetOper where SeriOper = 'PC01' and NumOper = '000051470'
+
+--select top 10 * from SGA.dbo.Notas_Cred_Deb where SeriOper = 'PC01' and NumOper = '000051470'
+
+
+SELECT top 100 * from SGA.dbo.Deudas
+where 
+        AñoAcad = '2015' AND
+        PeriAcad = '02' AND
+        NumCuota in ('01', '02', '03', '04', '05') AND
+        CondDeud in (0, 9) and
+        NumDI = 'A621524'
+/*
+    -- A621524 --
+    8888 00855589  
+    8888 00855590
+    8888 00855591
+    8888 00855592
+*/
+
+select top 10 * from SGA.dbo.PensionesxCobrar where SeriDeud = '8888' and NumDeud = '00855589' -- 1010190048
+select top 10 * from SGA.dbo.PensionesxCobrar where SeriDeud = '8888' and NumDeud = '00855590' -- 1120126803
+select top 10 * from SGA.dbo.PensionesxCobrar where SeriDeud = '8888' and NumDeud = '00855591' -- 1120167925
+select top 10 * from SGA.dbo.PensionesxCobrar where SeriDeud = '8888' and NumDeud = '00855592' -- 1060011992
+
+select top 10 * from SGA.dbo.Operacion where NumComFisico = '1010190048' or NumComFisico like '%1010190048%'
+select top 10 * from SGA.dbo.Operacion where NumComFisico = '1120126803' or NumComFisico like '%1120126803%'
+select top 10 * from SGA.dbo.Operacion where NumComFisico = '1120167925' or NumComFisico like '%1120167925%'
+select top 10 * from SGA.dbo.Operacion where NumComFisico = '1060011992' or NumComFisico like '%1060011992%'
+
+select top 10 * from SGA.dbo.DetOper where DocRef = '888800855589' or DocRef like '%888800855589%'
+select top 10 * from SGA.dbo.DetOper where DocRef = '888800855590' or DocRef like '%888800855590%'
+select top 10 * from SGA.dbo.DetOper where DocRef = '888800855591' or DocRef like '%888800855591%'
+select top 10 * from SGA.dbo.DetOper where DocRef = '888800855592' or DocRef like '%888800855592%'
+
+select top 10 * from SGA.dbo.DetOper where Comprobante = '1010190048'
+select top 10 * from SGA.dbo.DetOper where Comprobante = '1120126803'
+select top 10 * from SGA.dbo.DetOper where Comprobante = '1120167925'
+select top 10 * from SGA.dbo.DetOper where Comprobante = '1060011992'
+
+select top 10 * from SGA.dbo.Num_fisica where num_bolfac = '1010190048'
+select top 10 * from SGA.dbo.Num_fisica where num_bolfac = '1120126803'
+select top 10 * from SGA.dbo.Num_fisica where num_bolfac = '1120167925'
+select top 10 * from SGA.dbo.Num_fisica where num_bolfac = '1060011992' 
+
+
+SELECT top 100 * from SGA.dbo.Deudas
+where 
+        AñoAcad = '2019' AND
+        PeriAcad = '02' AND
+        NumCuota in ('01', '02', '03', '04', '05') AND
+        CondDeud in (0, 9) and
+        NumDI = 'A50380B'
+/*
+
+    -- A50380B -- 
+    8888 02217487 
+    8888 02217488
+    8888 02217489
+    8888 02217490
+    8888 02217491
+*/
+
+select top 10 * from SGA.dbo.PensionesxCobrar where SeriDeud = '8888' and NumDeud = '02217487' -- B01200598963
+
+select top 10 * from SGA.dbo.Comprobantes_Mestra where idComprobanteElectronico = 'B01200598963'
+select top 10 * from SGA.dbo.DetalleComprobante_Maestra WHERE idComprobanteElectronico = 'B01200598963'
+
+select top 10 * from SGA.dbo.DetOper where Comprobante = 'B01200598963' -- PC01 000599120
+select top 10 * from SGA.dbo.DetOper where DocRef = '888802217487'
+
+select top 10 * from SGA.dbo.Operacion where SeriOper = 'PC01' and NumOper = '000599120'
+select top 10 * from SGA.dbo.DetOper where SeriOper = 'PC01' and NumOper = '000599120'
+
+select top 10 * from SGA.dbo.Deudas where SeriDeud = '8888' AND NumDeud = '02217487' 
  
 

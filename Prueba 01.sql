@@ -119,6 +119,7 @@ BEGIN
                     FETCH NEXT FROM C_DETALLE_COMPROBANTE INTO @idComprobanteElectronico, @idComprobante, @CodigoItem, @PrecioUnitario, @TipoImpuesto, @Impuesto, @TotalVenta, @Suma;
                     WHILE @@FETCH_STATUS = 0
                     BEGIN
+
                         INSERT INTO SGA.dbo.DetOper
                         (
                             SeriOper,NumOper,item,CodContab,TipCodCont,Importe,NumCuota,AñoAcad,
@@ -139,19 +140,20 @@ BEGIN
                     DEALLOCATE C_DETALLE_COMPROBANTE;
 
 
-
-                    INSERT INTO SGA.dbo.DetOper
-                    (
-                        SeriOper,NumOper,item,CodContab,TipCodCont,Importe,NumCuota,AñoAcad,
-                        PeriAcad,DocRef,ImpTransf,ImpDscto,PorDscto,dFecOper,itemtransf,cantidad,
-                        codint,CondItem,TipoComp,Comprobante,Comprobante_REF,TIPDOC_REF
-                    )
-                    VALUES
-                    (
-                        @usuario_Serie, @NumOperChar, '001', '6595257', 'D', -@DeudaImporte, @DeudaNumCuota, @MatriculaAnioMax,
-                        @MatriculaPeriodoMax, @DeudaSerie+@DeudaNumeracion, 0, 0, 0, CONVERT(smalldatetime, GETDATE(), 120), NULL, 1,
-                        '----', '1', '7', @serie_NotaCredito+@NumNotaCreditoChar, @ComprobanteFE, '3'
-                    );
+                    /*
+                        INSERT INTO SGA.dbo.DetOper
+                        (
+                            SeriOper,NumOper,item,CodContab,TipCodCont,Importe,NumCuota,AñoAcad,
+                            PeriAcad,DocRef,ImpTransf,ImpDscto,PorDscto,dFecOper,itemtransf,cantidad,
+                            codint,CondItem,TipoComp,Comprobante,Comprobante_REF,TIPDOC_REF
+                        )
+                        VALUES
+                        (
+                            @usuario_Serie, @NumOperChar, '001', '6595257', 'D', -@DeudaImporte, @DeudaNumCuota, @MatriculaAnioMax,
+                            @MatriculaPeriodoMax, @DeudaSerie+@DeudaNumeracion, 0, 0, 0, CONVERT(smalldatetime, GETDATE(), 120), NULL, 1,
+                            '----', '1', '7', @serie_NotaCredito+@NumNotaCreditoChar, @ComprobanteFE, '3'
+                        );
+                    */
 
 
                     /* CREAR NOTA CREDITO */
@@ -248,7 +250,7 @@ BEGIN
                     (
                         @usuario_Serie, @NumOperChar, '12', @codigo_est, '00',
                         CONVERT(smalldatetime, GETDATE(), 120), CONVERT(char(8), GETDATE(), 108), 0, @DeudaImporte, '1', 1, 'PAGO DE DEUDA - CONDONACIÓN',
-                        'ADMINISTRADOR', '----', @CodEspEst, @SedeEst, @Programa, '0',
+                        'ADMINISTRADOR', '----', @CodEspEst, @SedeEst, @Programa, '0', 
                         30, '', '', 'NC', NULL, NULL, NULL
                     );
 
@@ -385,6 +387,8 @@ SELECT top 10 * from SGA.dbo.DetOper WHERE Comprobante like 'B%'
 SELECT distinct TIPDOC_REF from SGA.dbo.DetOper
 select top 10 * from SGA.dbo.Deudas
 
+select top 10 * from deudas
+
 
 /*
 
@@ -478,6 +482,8 @@ VALUES (
 -- END 
 -- ELSE BEGIN
 -- END
+
+
 
 
 
