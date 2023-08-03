@@ -41,8 +41,6 @@ BEGIN
             -- Numeracion operacion Usuarios
             DECLARE @NumOperChar CHAR(9);
             SELECT @NumOperChar = NumOper FROM SGA.dbo.Usuarios WHERE Serie = @usuario_Serie;
-            --SELECT @NumOperChar =  RIGHT('000000000' + LTRIM(RTRIM(CONVERT(CHAR(9), CONVERT(BIGINT, NumOper) + 1 ))), 9) FROM SGA.dbo.Usuarios WHERE Serie = @usuarioSerie;
-
 
             -- Especialidad, sede y programa Clientes
             DECLARE @CodEspEst VARCHAR(4), @SedeEst VARCHAR(2), @Programa CHAR(2);
@@ -83,8 +81,13 @@ BEGIN
                     DECLARE @OperacionSerie char(4), @OperacionNumeracion char(9);
                     SELECT  @OperacionSerie = SeriOper, @OperacionNumeracion = NumOper FROM SGA.dbo.Operacion where Serie_FE+Numero_FE =   TRIM(@ComprobanteFE);
 
+                    -- IF EXISTS( SELECT TOP 1 * FROM SGA.dbo.Comprobantes_Mestra where idComprobanteElectronico = TRIM(@ComprobanteFE) ) BEGIN
+                    -- END
+                    -- ELSE BEGIN 
+                    -- END
 
-                    /* OPERACION NOTA CREDITO */
+
+                    /* OPERACION CANCELAR DEUDA */
                     INSERT INTO SGA.dbo.Operacion
                     (
                         SeriOper,NumOper,TipDI,NumDI,TipOper,
@@ -95,18 +98,51 @@ BEGIN
                     VALUES
                     (
                         @usuario_Serie, @NumOperChar, '12', @codigo_est, '01', -- condonacion
-                        CONVERT(smalldatetime, GETDATE(), 120), CONVERT(char(8), GETDATE(), 108), 0, -@DeudaImporte, '1', 1, 'RECTIFICACIÓN DE COMPROBANTE EMITIDO '+@ComprobanteFE+' POR DERECHO DE CONDONACIÓN DE DEUDA',
+                        CONVERT(smalldatetime, GETDATE(), 120), CONVERT(char(8), GETDATE(), 108), 0, @DeudaImporte, '1', 1, 'OPERACION DE CANCELACION DEUDA '+@DeudaSerie+@DeudaNumeracion,
                         'ADMINISTRADOR', '----', @CodEspEst, @SedeEst, @Programa, '0',
                         30, @serie_NotaCredito, @NumNotaCreditoChar, 'NC', NULL, NULL, NULL
                     );
 
 
-                    /* DETALLE OPERACION NOTA CREDITO */
+                   DECLARE @DetOperSerie CHAR(4), @DetOperNum CHAR(9), @DetOperItem CHAR(3), @DetOperCodContab CHAR(14),  @DetOperImporte NUMERIC(15,2);
+
+                    DECLARE C_DETALLE_OPERACION  CURSOR FOR   
+                        SELECT item CodContab, Importe
+                        FROM SGA.dbo.DetOper 
+                        WHERE DocRef = TRIM(@DeudaSerie)+TRIM(@DeudaNumeracion) or Comprobante = TRIM(@ComprobanteFE);
+
+                    OPEN C_DETALLE_OPERACION;
+
+                    FETCH NEXT FROM C_DETALLE_OPERACION INTO @DetOperSerie, @DetOperNum, @DetOperItem, @DetOperCodContab, @DetOperImporte;
+                    WHILE @@FETCH_STATUS = 0
+                    BEGIN
+
+                        /* DETALLE OPERACION CANCELAR DEUDA */
+                        INSERT INTO SGA.dbo.DetOper
+                        (
+                            SeriOper,NumOper,item,CodContab,TipCodCont,Importe,NumCuota,AñoAcad,
+                            PeriAcad,DocRef,ImpTransf,ImpDscto,PorDscto,dFecOper,itemtransf,cantidad,
+                            codint,CondItem,TipoComp,Comprobante,Comprobante_REF,TIPDOC_REF
+                        )
+                        VALUES
+                        (
+                            @usuario_Serie, @NumOperChar, @DetOperItem, '6595257', 'D', @DetOperImporte, @DeudaNumCuota, @MatriculaAnioMax,
+                            @MatriculaPeriodoMax, @DeudaSerie+@DeudaNumeracion, 0, 0, 0, CONVERT(smalldatetime, GETDATE(), 120), NULL, 1,
+                            '----', '1', '7', @serie_NotaCredito+@NumNotaCreditoChar, @ComprobanteFE, '3'
+                        );
+
+                        FETCH NEXT FROM C_DETALLE_OPERACION INTO @DetOperItem, @DetOperCodContab, @DetOperImporte;
+                    END
+                    CLOSE C_DETALLE_OPERACION;
+                    DEALLOCATE C_DETALLE_OPERACION;
+
 
                     /* Cursor detalle comprobante */
                     -- DECLARE @DeudaSerie CHAR(4), @DeudaNumeracion CHAR(8), @DeudaCodContab char(14), @DeudaImporte NUMERIC(15,2), @DeudaNumCuota CHAR(2);
                     -- select distinct CodigoItem from SGA.dbo.DetalleComprobante_Maestra where idComprobanteElectronico = 'B01200919841'
                     -- select top 10 * from SGA.dbo.DetalleComprobante_Maestra
+
+                    /*
                     DECLARE @idComprobanteElectronico VARCHAR(20), @idComprobante VARCHAR(20), @CodigoItem INT, @PrecioUnitario DECIMAL(14,2), @TipoImpuesto CHAR(2), @Impuesto DECIMAL(14,2), @TotalVenta DECIMAL(14,2), @Suma DECIMAL(14,2);
 
                     
@@ -138,6 +174,7 @@ BEGIN
 
                     CLOSE C_DETALLE_COMPROBANTE;
                     DEALLOCATE C_DETALLE_COMPROBANTE;
+                    */
 
 
                     /*
@@ -177,6 +214,7 @@ BEGIN
                     SELECT @NumOperPagoChar = NumOper FROM SGA.dbo.Usuarios WHERE Serie = @usuario_Serie;
 
 
+                    /*
                     /* OPERACION PAGO DEUDA */
                     INSERT INTO SGA.dbo.Operacion
                     (
@@ -207,6 +245,7 @@ BEGIN
                         @MatriculaPeriodoMax, @DeudaSerie+@DeudaNumeracion, 0, 0, 0, CONVERT(smalldatetime, GETDATE(), 120), NULL, 1,
                         '----', '1', '3', '', '', '3'
                     ); 
+                    */
 
 
                     /*  ACTUALIZAR DEUDA */
@@ -483,7 +522,47 @@ VALUES (
 -- ELSE BEGIN
 -- END
 
+select * from SGA.dbo.PensionesxCobrar WHERE Comprobante = 'E00100000009'
+select * from SGA.dbo.Deudas WHERE SeriDeud = '8888' and NumDeud = '02425526'
+select * from SGA.dbo.DetOper WHERE SeriOper = '8888' and NumOper = '000025151'
 
 
+-- Get the space used by table TableName
+SELECT TABL.name AS table_name,
+INDX.name AS index_name,
+SUM(PART.rows) AS rows_count,
+SUM(ALOC.total_pages) AS total_pages,
+SUM(ALOC.used_pages) AS used_pages,
+SUM(ALOC.data_pages) AS data_pages,
+(SUM(ALOC.total_pages)*8/1024) AS total_space_MB,
+(SUM(ALOC.used_pages)*8/1024) AS used_space_MB,
+(SUM(ALOC.data_pages)*8/1024) AS data_space_MB
+FROM sys.tables AS TABL
+INNER JOIN sys.indexes AS INDX
+ON TABL.object_id = INDX.object_id
+INNER JOIN sys.partitions AS PART
+ON INDX.object_id = PART.object_id
+AND INDX.index_id = PART.index_id
+INNER JOIN sys.allocation_units AS ALOC
+ON PART.partition_id = ALOC.container_id
+WHERE TABL.name LIKE '%TableName%'
+AND INDX.object_id > 255
+AND INDX.index_id <= 1
+GROUP BY TABL.name, 
+INDX.object_id,
+INDX.index_id,
+INDX.name
+ORDER BY Object_Name(INDX.object_id),
+(SUM(ALOC.total_pages)*8/1024) DESC
+GO
+
+select top 10 * from SGA.dbo.PensionesxCobrar where Comprobante = '2020087359'
+
+
+select top 10 * from SGA.dbo.DetOper where Comprobante = '2020087359' -- 0001 000225902
+
+
+select top 10 * from SGA.dbo.Operacion where SeriOper = '0001' and NumOper = '000225902'
+select top 10 * from SGA.dbo.DetOper where SeriOper = '0001' and NumOper = '000225902'
 
 
