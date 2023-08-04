@@ -1,4 +1,7 @@
-CREATE PROCEDURE SP_PROCESO_CONDONACION(
+GO
+
+
+CREATE OR ALTER PROCEDURE SP_PROCESO_CONDONACION(
     @codigo_est varchar(15)
 )AS
 BEGIN
@@ -109,8 +112,8 @@ BEGIN
                     DECLARE C_DETALLE_OPERACION  CURSOR FOR   
                         SELECT item CodContab, Importe
                         FROM SGA.dbo.DetOper 
-                        WHERE DocRef = TRIM(@DeudaSerie)+TRIM(@DeudaNumeracion) or Comprobante = TRIM(@ComprobanteFE);
-
+                        WHERE Comprobante = TRIM(@ComprobanteFE);
+                                -- DocRef = TRIM(@DeudaSerie)+TRIM(@DeudaNumeracion) or 
                     OPEN C_DETALLE_OPERACION;
 
                     FETCH NEXT FROM C_DETALLE_OPERACION INTO @DetOperSerie, @DetOperNum, @DetOperItem, @DetOperCodContab, @DetOperImporte;
@@ -564,5 +567,175 @@ select top 10 * from SGA.dbo.DetOper where Comprobante = '2020087359' -- 0001 00
 
 select top 10 * from SGA.dbo.Operacion where SeriOper = '0001' and NumOper = '000225902'
 select top 10 * from SGA.dbo.DetOper where SeriOper = '0001' and NumOper = '000225902'
+
+/* J03932K */
+
+SELECT top 10 * from SGA.dbo.Operacion where SeriOper = 'PC01' and NumOper = '000920026'
+SELECT top 10 * from SGA.dbo.DetOper where SeriOper = 'PC01' and NumOper = '000920026'
+
+/* f10102e */
+SELECT top 10 * from SGA.dbo.Operacion where SeriOper = '0002' and NumOper = '001075903'
+SELECT top 10 * from SGA.dbo.DetOper where SeriOper = '0002' and NumOper = '001075903'
+
+
+SELECT top 10 * from SGA.dbo.Operacion where SeriOper = '0002' and NumOper = '001075903'
+SELECT top 10 * from SGA.dbo.Operacion where SeriOper = 'PC01' and NumOper = '000920026'
+
+SELECT top 10 * from SGA.dbo.DetOper where SeriOper = '0002' and NumOper = '001075903'
+SELECT top 10 * from SGA.dbo.DetOper where SeriOper = 'PC01' and NumOper = '000920026'
+
+
+DECLARE @TablaResultado TABLE (
+    comprobante varchar(15),
+    cantidad bigint
+);
+
+
+
+insert into @TablaResultado (comprobante, cantidad)
+
+SELECT pc.Comprobante AS id_principal, COUNT(deu.NumDeud) AS cantidad_referencias
+FROM SGA.dbo.PensionesxCobrar pc
+LEFT JOIN SGa.dbo.Deudas deu ON pc.SeriDeud = deu.SeriDeud AND pc.NumDeud = deu.NumDeud
+--WHERE tp.Comprobante like 'B%'
+where deu.CondDeud in ('0', '9')
+GROUP BY pc.Comprobante
+HAVING COUNT(deu.NumDeud) > 1;
+
+/* */
+
+DECLARE @RComprobante VARCHAR(15), @RCantidad BIGINT;
+
+DECLARE C_TABLA_RESUL CURSOR FOR
+SELECT pc.Comprobante AS id_principal, COUNT(deu.NumDeud) AS cantidad_referencias
+FROM SGA.dbo.PensionesxCobrar pc
+LEFT JOIN SGa.dbo.Deudas deu ON pc.SeriDeud = deu.SeriDeud AND pc.NumDeud = deu.NumDeud
+--WHERE tp.Comprobante like 'B%'
+    where deu.CondDeud in ('0', '9')
+    GROUP BY pc.Comprobante
+    HAVING COUNT(deu.NumDeud) > 1;
+
+OPEN C_TABLA_RESUL;
+    
+FETCH NEXT FROM C_TABLA_RESUL INTO @RComprobante, @RCantidad
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    IF EXISTS (select * from SGA.dbo.Operacion where NumComFisico = @RComprobante ) BEGIN
+        PRINT 'Existe el comprobante : '+@RComprobante
+    END
+    ELSE BEGIN
+        PRINT 'No existe el comprobante: '+@RComprobante
+    END
+
+
+    FETCH NEXT FROM C_TABLA_RESUL INTO @RComprobante, @RCantidad
+END
+CLOSE C_TABLA_RESUL;
+DEALLOCATE C_TABLA_RESUL;
+
+
+
+if exists (
+    SELECT * from SGA.dbo.DetOper do 
+    INNER join @TablaResultado  tr on do.Comprobante = tr.comprobante
+)
+
+-- select top 10 * from SGA.dbo.DetOper
+
+
+select comprobante as 'Comprobante Resultado', cantidad as 'Cantidad Resultado' from @TablaResultado
+
+/* CON WHILE */
+
+DECLARE @rows INT;
+DECLARE @rowid INT;
+DECLARE @SeriDeud CHAR(4), @NumDeud CHAR(8), @CodContab CHAR(14), @Importe NUMERIC(15,2), @TasaMora NUMERIC(11,8), @NumCuota CHAR(2); 
+declare @DeudaTemp table (
+    rowid int identity(1,1), 
+    SeriDeud char(4),
+    NumDeud char(8),
+    CodContab char(14),
+    Importe numeric(15, 2),
+    TasaMora numeric(11, 8),
+    NumCuota char(2)
+);
+
+
+INSERT INTO @DeudaTemp (SeriDeud, NumDeud, CodContab, Importe, TasaMora, NumCuota)
+SELECT  -- top 10 *
+    SeriDeud, NumDeud, CodContab, Importe, TasaMora, NumCuota
+    FROM SGA.dbo.Deudas
+        WHERE   AñoAcad = '2015' AND
+                PeriAcad = '02' AND
+                NumCuota in ('01', '02', '03', '04', '05') AND  --@DeudaNumCuota AND 
+                CondDeud in (0, 9) and
+                NumDI = 'A621524';
+
+
+SELECT @rows = count(rowid) from @DeudaTemp
+WHILE (@rows > 0)
+BEGIN
+    SELECT top 1 @rowid = rowid, @SeriDeud = SeriDeud, @NumDeud = NumDeud, @CodContab = CodContab, @Importe = Importe, @TasaMora = TasaMora , @NumCuota = NumCuota
+    FROM @DeudaTemp
+
+    IF EXISTS(SELECT * from SGA.dbo.PensionesxCobrar where SeriDeud = TRIM(@SeriDeud) and NumDeud = TRIM(@NumDeud) and Comprobante LIKE 'B%' or Comprobante LIKE 'F%') BEGIN
+        
+        -- Comprobante FE PensionesxCobrar
+        DECLARE @ComprobanteFE varchar(15);
+        SELECT @ComprobanteFE = Comprobante FROM SGA.dbo.PensionesxCobrar WHERE SeriDeud = TRIM(@SeriDeud) AND NumDeud = TRIM(@NumDeud);
+       
+        DECLARE @rowsDet INT;
+        DECLARE @rowidDet INT;
+        DECLARE @DetSeri CHAR(4), @DetNum CHAR(8), @DetItem CHAR(3), @DetCodContab CHAR(14), @DetImporte NUMERIC(15,2), @DetNumCuota CHAR(2), @DetDocRef char(12), @DetComprobante CHAR(12); 
+        DECLARE @DeTalleOperTemp table (
+            rowidDet int identity(1,1), 
+            SeriOper char(4),
+            NumOper char(9),
+            item char(3),
+            CodContab char(14),
+            Importe numeric(15, 2),
+            NumCuota char(2),
+            DocRef char(12),
+            Comprobante char(12)
+        );
+
+        INSERT INTO @DeTalleOperTemp ( SeriOper, NumOper, item, CodContab, Importe, NumCuota, DocRef, Comprobante)
+        SELECT  SeriOper, NumOper, item, CodContab, Importe, NumCuota, DocRef, Comprobante FROM SGA.dbo.DetOper 
+        WHERE Comprobante = @ComprobanteFE
+
+
+        SELECT @rowsDet = count(@rowidDet) from @DeTalleOperTemp
+
+        WHILE (@rows > 0)
+        BEGIN
+            SELECT top 1 @rowidDet = rowidDet, @DetSeri = SeriOper, @DetNum = NumOper, @DetItem = item, @DetCodContab = CodContab, @DetImporte = Importe, @DetNumCuota = NumCuota, @DetDocRef = DocRef, @DetComprobante = Comprobante
+            FROM @DeTalleOperTemp
+            
+
+            DELETE from @DeTalleOperTemp where rowidDet = @rowidDet
+            SELECT @rowsDet = count(rowidDet) from @DeTalleOperTemp
+        END
+
+        
+
+        -- select top 10 * from SGA.dbo.DetOper where Comprobante = '1110086668' --- 0002 000466049
+
+        -- select top 10 * from SGA.dbo.Operacion where NumComFisico = '1110086668' --- 0002 000466049
+        -- select top 10 * from SGA.dbo.Operacion where SeriOper = '0002' and NumOper = '000466049'
+
+    END
+    ELSE BEGIN
+
+        -- Comprobante Fisico
+        DECLARE @ComprobanteFisico varchar(15);
+        SELECT @ComprobanteFE = Comprobante FROM SGA.dbo.PensionesxCobrar WHERE SeriDeud = TRIM(@SeriDeud) AND NumDeud = TRIM(@NumDeud);
+
+
+    END
+
+
+    DELETE from @DeudaTemp where rowid = @rowid
+    SELECT @rows = count(rowid) from @DeudaTemp
+END
 
 
