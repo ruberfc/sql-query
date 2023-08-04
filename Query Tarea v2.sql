@@ -6,6 +6,7 @@ DECLARE @TotalNotasCurso int;
 DECLARE @TotalCursosMatriculados int;
 
 DECLARE @Num_DI varchar(15) = 'A621524';
+
 DECLARE @usuario_serie char(4) = '8888';
 DECLARE @Serie_Boleta char(4) = 'B026';
 
@@ -408,3 +409,6 @@ ELSE BEGIN
         print 'algo fallo'
     END
 END
+
+
+
