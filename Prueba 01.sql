@@ -647,7 +647,7 @@ select comprobante as 'Comprobante Resultado', cantidad as 'Cantidad Resultado' 
 
 
 GO
-CREATE OR ALTER PROCEDURE SP_PROCESO_CONDONACION_TRANSAC(
+CREATE OR ALTER PROCEDURE SP_PROCESO_CONDONACION_TRANSACION(
     @codigo_est varchar(15)
 )AS
 BEGIN
@@ -663,7 +663,7 @@ BEGIN
     
     -- Obtener ultimo año de matricula del estudiante Nta_Nota
     DECLARE @MatriculaAnioMax VARCHAR(4);
-    SELECT @MatriculaAnioMax = MAX(Mtr_Anio) from DBCampusNet.dbo.Nta_Nota where Est_Id = @codigo_est
+    SELECT @MatriculaAnioMax = MAX(Mtr_Anio) from DBCampusNet.dbo.Nta_Nota where Est_Id = @codigo_est;
 
 
     -- Obtener ultimo periodo de matricula del estudiante Nta_Nota
@@ -692,10 +692,6 @@ BEGIN
             SELECT top 1 @CodEsp = CodEspe, @SedeEst = sed_id, @Programa = MAC_id  FROM SGA.dbo.Clientes WHERE Cli_NumDoc = @codigo_est;
 
 
-            /* Cursor deuda Estudiante */
-            --DECLARE @DeudaSerie CHAR(4), @DeudaNumeracion CHAR(8), @DeudaCodContab char(14), @DeudaImporte NUMERIC(15,2), @DeudaNumCuota CHAR(2);
-
-
             DECLARE @rows INT;
             DECLARE @rowid INT;
             DECLARE @DeudaSeri CHAR(4), @DeudaNum CHAR(8), @DeudaCodContab CHAR(14), @DeudaImporte NUMERIC(15,2), @DeudaTasaMora NUMERIC(11,8), @DeudaNumCuota CHAR(2); 
@@ -721,80 +717,99 @@ BEGIN
             SELECT @rows = count(rowid) from @DeudaTemp
             WHILE (@rows > 0)
             BEGIN
+
                 SELECT top 1 @rowid = rowid, @DeudaSeri = SeriDeud, @DeudaNum = NumDeud, @DeudaCodContab = CodContab, @DeudaImporte = Importe, @DeudaTasaMora = TasaMora , @DeudaNumCuota = NumCuota
                 FROM @DeudaTemp
 
                 IF EXISTS(SELECT * from SGA.dbo.PensionesxCobrar where SeriDeud = TRIM(@DeudaSeri) and NumDeud = TRIM(@DeudaNum) and Comprobante LIKE 'B%' or Comprobante LIKE 'F%') BEGIN
                     /* ELECTRONICO */
 
-                    IF EXISTS (select * from SGA.dbo.Descuento_doble where Seriedeud = CONCAT(@DeudaSeri,@DeudaNum) AND Numdi = @codigo_est) BEGIN
-                        
-                    END
-
                     -- Comprobante FE
                     DECLARE @ComprobanteFE varchar(15);
                     SELECT @ComprobanteFE = Comprobante FROM SGA.dbo.PensionesxCobrar WHERE SeriDeud = TRIM(@DeudaSeri) AND NumDeud = TRIM(@DeudaNum);
+
+                    -- TotOper, Cod_AfectaIGV
+                    DECLARE @OperTotOper NUMERIC(11, 2), @OperCod_AfectaIGV INT;
+                    SELECT @OperTotOper = TotOper, @OperCod_AfectaIGV = Cod_AfectaIGV FROM SGA.dbo.Operacion WHERE TRIM(Serie_FE)+TRIM(Numero_FE) = TRIM(@ComprobanteFE);
 
                     -- Numeracion nota credito
                     DECLARE @NumNotaCreditoChar char(8);
                     SELECT @NumNotaCreditoChar = NumeroElec FROM SGA.dbo.NumeracionFE WHERE serie = @usuario_Serie AND SerieElec = @serie_NotaCredito;
 
-                    /* OPERACION CANCELAR DEUDA */
-                    INSERT INTO SGA.dbo.Operacion
-                    (
-                        SeriOper,NumOper,TipDI,NumDI,TipOper,
-                        FecOper,HoraOper,AnulOper,TotOper,TipMoneda,TipCambio,Observac,
-                        Usuario,TipDoc,Codespe,sede,programa,NumComFisico,
-                        Cod_AfectaIGV,Serie_FE,Numero_FE,Tip_DocumentoTrib,Declarado_Sunat,Correlativo_Baja,Rechazado_Sunat
-                    )VALUES
-                    (
-                        @usuario_Serie, @NumOperChar, '12', @codigo_est, '01', -- condonacion
-                        CONVERT(smalldatetime, GETDATE(), 120), CONVERT(char(8), GETDATE(), 108), 0, @DeudaImporte, '1', 1, 'OPERACION DE CANCELACION DEUDA '+@DeudaSeri+@DeudaNum,
-                        'ADMINISTRADOR', '----', @CodEsp, @SedeEst, @Programa, '0',
-                        30, @serie_NotaCredito, @NumNotaCreditoChar, 'NC', NULL, NULL, NULL
-                    );
+                    IF EXISTS (select * from SGA.dbo.Descuento_doble where Seriedeud = CONCAT(@DeudaSeri,@DeudaNum) AND Numdi = @codigo_est) BEGIN
+                        /* DESCUENTO DOBLE */
 
-                
-                    DECLARE @rowsDet INT;
-                    DECLARE @rowidDet INT;
-                    DECLARE @DetSeri CHAR(4), @DetNum CHAR(8), @DetItem CHAR(3), @DetCodContab CHAR(14), @DetImporte NUMERIC(15,2), @DetNumCuota CHAR(2), @DetDocRef char(12), @DetComprobante CHAR(12); 
-                    DECLARE @DeTalleOperTemp table (
-                        rowidDet int identity(1,1), 
-                        SeriOper char(4),
-                        NumOper char(9),
-                        item char(3),
-                        CodContab char(14),
-                        Importe numeric(15, 2),
-                        NumCuota char(2),
-                        DocRef char(12),
-                        Comprobante char(12)
-                    );
-                    INSERT INTO @DeTalleOperTemp ( SeriOper, NumOper, item, CodContab, Importe, NumCuota, DocRef, Comprobante)
-                    SELECT  SeriOper, NumOper, item, CodContab, Importe, NumCuota, DocRef, Comprobante FROM SGA.dbo.DetOper 
-                    WHERE Comprobante = @ComprobanteFE
+                        INSERT INTO SGA.dbo.Operacion
+                        (
+                            SeriOper,NumOper,TipDI,NumDI,TipOper,
+                            FecOper,HoraOper,AnulOper,TotOper,TipMoneda,TipCambio,Observac,
+                            Usuario,TipDoc,Codespe,sede,programa,NumComFisico,
+                            Cod_AfectaIGV,Serie_FE,Numero_FE,Tip_DocumentoTrib,Declarado_Sunat,Correlativo_Baja,Rechazado_Sunat
+                        )VALUES
+                        (
+                            @usuario_Serie, @NumOperChar, '12', @codigo_est, '01', -- condonacion
+                            CONVERT(smalldatetime, GETDATE(), 120), CONVERT(char(8), GETDATE(), 108), 0, @OperTotOper, '1', 1, 'OPERACION DE CANCELACION DEUDA '+@DeudaSeri+@DeudaNum,
+                            'ADMINISTRADOR', '----', @CodEsp, @SedeEst, @Programa, '0',
+                            30, @serie_NotaCredito, @NumNotaCreditoChar, 'NC', NULL, NULL, NULL
+                        );
 
+                        INSERT INTO SGA.dbo.DetOper
+                        (
+                            SeriOper,NumOper,item,CodContab,TipCodCont,Importe,NumCuota,AñoAcad,
+                            PeriAcad,DocRef,ImpTransf,ImpDscto,PorDscto,dFecOper,itemtransf,cantidad,
+                            codint,CondItem,TipoComp,Comprobante,Comprobante_REF,TIPDOC_REF
+                        )
+                        VALUES
+                        (
+                            @usuario_Serie, @NumOperChar, '001', '6595257', 'D', @OperTotOper, @DeudaNumCuota, @MatriculaAnioMax,
+                            @MatriculaPeriodoMax, @DeudaSeri+@DeudaNum, 0, 0, 0, CONVERT(smalldatetime, GETDATE(), 120), '', 1,
+                            '----', '----', '7', @serie_NotaCredito+@NumNotaCreditoChar, @ComprobanteFE, '3'
+                        ); 
 
+                        UPDATE SGA.dbo.NumeracionFE SET 
+                        NumeroElec = RIGHT('00000000' + LTRIM(RTRIM(CONVERT(CHAR(8), CONVERT(BIGINT, @NumNotaCreditoChar) + 1 ))), 8)
+                        WHERE serie = @usuario_Serie AND SerieElec = @serie_NotaCredito;
 
-                    SELECT @rowsDet = count(@rowidDet) from @DeTalleOperTemp
-                    WHILE (@rows > 0)
-                    BEGIN
-                        SELECT top 1 @rowidDet = rowidDet, @DetSeri = SeriOper, @DetNum = NumOper, @DetItem = item, @DetCodContab = CodContab, @DetImporte = Importe, @DetNumCuota = NumCuota, @DetDocRef = DocRef, @DetComprobante = Comprobante
-                        FROM @DeTalleOperTemp
+                        UPDATE SGA.dbo.Usuarios Set 
+                            NumOper = RIGHT('000000000' + LTRIM(RTRIM(CONVERT(CHAR(9), CONVERT(BIGINT, @NumOperChar) + 1 ))), 9)  
+                        Where Serie = @usuario_Serie;
 
-
-
-                        
-
-                        DELETE from @DeTalleOperTemp where rowidDet = @rowidDet
-                        SELECT @rowsDet = count(rowidDet) from @DeTalleOperTemp
                     END
+                    ELSE BEGIN
 
-                    
+                        DECLARE @rowsDet INT;
+                        DECLARE @rowidDet INT;
+                        DECLARE @DetSeri CHAR(4), @DetNum CHAR(8), @DetItem CHAR(3), @DetCodContab CHAR(14), @DetTipCodCont CHAR(1), @DetImporte NUMERIC(15,2), @DetNumCuota CHAR(2), @DetDocRef char(12), @DetComprobante CHAR(12); 
+                        DECLARE @DeTalleOperTemp table (
+                            rowidDet int identity(1,1), 
+                            SeriOper char(4),
+                            NumOper char(9),
+                            item char(3),
+                            CodContab char(14),
+                            TipCodCont char(1),
+                            Importe numeric(15, 2),
+                            NumCuota char(2),
+                            DocRef char(12),
+                            Comprobante char(12)
+                        );
+                        INSERT INTO @DeTalleOperTemp ( SeriOper, NumOper, item, CodContab, TipCodCont, Importe, NumCuota, DocRef, Comprobante)
+                        SELECT  SeriOper, NumOper, item, CodContab, TipCodCont, Importe, NumCuota, DocRef, Comprobante FROM SGA.dbo.DetOper 
+                        WHERE Comprobante = @ComprobanteFE;
 
-                    -- select top 10 * from SGA.dbo.DetOper where Comprobante = '1110086668' --- 0002 000466049
+                        SELECT @rowsDet = count(@rowidDet) from @DeTalleOperTemp
+                        WHILE (@rows > 0)
+                        BEGIN
+                            SELECT top 1 @rowidDet = rowidDet, @DetSeri = SeriOper, @DetNum = NumOper, @DetItem = item, @DetCodContab = CodContab, @DetImporte = Importe, @DetNumCuota = NumCuota, @DetDocRef = DocRef, @DetComprobante = Comprobante
+                            FROM @DeTalleOperTemp
 
-                    -- select top 10 * from SGA.dbo.Operacion where NumComFisico = '1110086668' --- 0002 000466049
-                    -- select top 10 * from SGA.dbo.Operacion where SeriOper = '0002' and NumOper = '000466049'
+                            
+                            
+                            DELETE from @DeTalleOperTemp where rowidDet = @rowidDet
+                            SELECT @rowsDet = count(rowidDet) from @DeTalleOperTemp
+                        END   
+
+
+                    END
 
                 END
                 ELSE BEGIN
@@ -815,7 +830,8 @@ BEGIN
                         FecOper,HoraOper,AnulOper,TotOper,TipMoneda,TipCambio,Observac,
                         Usuario,TipDoc,Codespe,sede,programa,NumComFisico,
                         Cod_AfectaIGV,Serie_FE,Numero_FE,Tip_DocumentoTrib,Declarado_Sunat,Correlativo_Baja,Rechazado_Sunat
-                    )VALUES
+                    )
+                    VALUES
                     (
                         @usuario_Serie, @NumOperChar, '12', @codigo_est, '01', -- condonacion
                         CONVERT(smalldatetime, GETDATE(), 120), CONVERT(char(8), GETDATE(), 108), 0, -@DeudaImporte, '1', 1, 'OPERACIÓN DE CANCELACIÓN DE DEUDA ' + @DeudaSeri+@DeudaNum+  ' POR DERECHO DE CONDONACIÓN',
@@ -876,7 +892,6 @@ BEGIN
             DECLARE @NewBoletaNumeracion CHAR(8);
             Select @NewBoletaNumeracion = NumeroElec from SGA.dbo.NumeracionFE where Serie = @usuario_Serie and SerieElec = @serie_Boleta;
 
-
             -- CREAR DEUDA
             INSERT INTO SGA.dbo.Deudas 
             (
@@ -935,15 +950,15 @@ BEGIN
 
             UPDATE SGA.dbo.NumeracionFE SET 
                 NumeroElec = RIGHT('000000000' + LTRIM(RTRIM(CONVERT(CHAR(9), CONVERT(BIGINT, @NewBoletaNumeracion) + 1 ))), 9)
-            Where Serie = @usuario_Serie AND SerieElec = @serie_Boleta;
-            
+            Where Serie = @usuario_Serie AND SerieElec = @serie_Boleta; 
 
+            RETURN 'Deuda generada ' + @usuario_Serie + ' ' + @NewDeudaNumeracion
 
         END
         ELSE BEGIN
             RETURN 'No se hiso impedir en todos los cursos';
         END
-    END
 
+    END
 
 END

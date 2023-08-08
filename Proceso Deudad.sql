@@ -826,7 +826,7 @@ SELECT top 10 * from SGA.dbo.Operacion WHERE Serie_FE+Numero_FE = 'B01200006795'
 SELECT top 10 * from SGA.dbo.Operacion WHERE NumComFisico = '1020041273'
 
 SELECT top 10 * from SGA.dbo.DetOper where Comprobante = '1020041273'
-SELECT top 10 * from SGA.dbo.DetOper where DocRef = '888801134220'
+SELECT top 10 * from SGA.dbo.DetOper where DocRef = '888801779070'
 
 SELECT top 100 * from SGA.dbo.DetOper where Comprobante like '00000%'
 
@@ -836,7 +836,7 @@ SELECT top 10 * from SGA.dbo.Deudas where SeriDeud+NumDeud = '888801134224'
 
 
 select pc.Comprobante, COUNT(pc.Comprobante) total from SGA.dbo.PensionesxCobrar pc
-inner JOIN Deudas deu on pc.SeriDeud = deu.SeriDeud AND pc.NumDeud = deu.NumDeud
+inner JOIN SGA.dbo.Deudas deu on pc.SeriDeud = deu.SeriDeud AND pc.NumDeud = deu.NumDeud
 --WHERE Comprobante like '%B%' or Comprobante like '%F%'
 WHERE deu.CondDeud in ( '0', '9') AND deu.NumCuota in ('01', '02', '03', '04', '05') and deu.AñoAcad = '2015'-- and deu.NumDI = 'A621524'
 GROUP by pc.Comprobante
@@ -893,17 +893,66 @@ WHERE   AñoAcad = '2021' AND
 
 /* 
     - 8888 /  02449789, 02449790, 02449791, 02449792, 02449793
-    - B01200769823, 
+    - B01200769823, B01200779811, B01200791988, B01200791989, B01200808828
 */
 
-select top 10 * from SGA.dbo.PensionesxCobrar WHERE SeriDeud = '8888' and NumDeud = '02449789'
-select top 10 * from SGA.dbo.Descuento_doble WHERE Seriedeud = '888802449789'
+select top 10 * from SGA.dbo.PensionesxCobrar WHERE SeriDeud = '8888' and NumDeud = '02449793'
+
+select top 10 * from SGA.dbo.Deudas WHERE SeriDeud+NumDeud in (
+    '888802449789',
+    '888802449790',
+    '888802449791',
+    '888802449792',
+    '888802449793'
+)
+
+select top 10 * from SGA.dbo.PensionesxCobrar where CONCAT(SeriDeud, NumDeud) in (
+    '888802449789',
+    '888802449790',
+    '888802449791',
+    '888802449792',
+    '888802449793'
+)
+
+select top 10 * from SGA.dbo.Descuento_doble WHERE Seriedeud in (
+    '888802449789',
+    '888802449790',
+    '888802449791',
+    '888802449792',
+    '888802449793'
+)
+
+select top 10 * from SGA.dbo.DetOper where DocRef in (
+    '888802449789',
+    '888802449790',
+    '888802449791',
+    '888802449792',
+    '888802449793'
+)
+
+select top 10 * from SGA.dbo.Operacion where Serie_FE+Numero_FE in (
+    'B01200769823',
+    'B01200779811',
+    'B01200791988',
+    'B01200791989',
+    'B01200808828'
+)
+
+
+select top 10 * from SGA.dbo.PensionesxCobrar where Comprobante in (
+    'B01200769823',
+    'B01200779811',
+    'B01200791988',
+    'B01200791989',
+    'B01200808828'
+)
+
+
 select top 10 * from SGA.dbo.DetOper Where Comprobante =  'B01200769823' -- PC01 / 000770002, 
 select top 10 * from SGA.dbo.Operacion where SeriOper = 'PC01' and NumOper = '000770002'
 
 select top 10 * from SGA.dbo.Comprobantes_Mestra where idComprobanteElectronico = 'B01200769823'
 select top 10 * from SGA.dbo.DetalleComprobante_Maestra where idComprobanteElectronico = 'B01200769823'
-
 
 select top 10 * from SGA.dbo.Descuento_doble WHERE Seriedeud = '888802449789'
 select top 10 * from SGA.dbo.Comprobantes_Mestra where idComprobanteElectronico = 'B01200769823'
@@ -913,11 +962,20 @@ select top 10 * from SGA.dbo.PlanContab WHERE c_cuen = '000770002'
 
 select top 10 * from SGA.dbo.PlanContab WHERE c_cuen in ('1251013' ,'7414015')
 
-SELECT top 10 * from SGA.dbo.Deudas deu
+SELECT top 100 * from SGA.dbo.Deudas deu
 INNER JOIN SGA.dbo.Descuento_doble dd on deu.SeriDeud+deu.NumDeud = dd.Seriedeud
 INNER JOIN SGA.dbo.PensionesxCobrar pc on deu.SeriDeud = pc.SeriDeud and deu.NumDeud = pc.NumDeud
 where -- deu.SeriDeud = '8888'  and deu.NumDeud = '02449789' 
-        pc.Comprobante not like 'B%' or pc.Comprobante not like 'F%' and deu.CondDeud in ('0', '9')
+        -- pc.Comprobante not like 'B%' or pc.Comprobante not like 'F%' and deu.CondDeud in ('0', '9')
+        deu.CondDeud in ('0', '9') and deu.NumDI = 'Q00683D'
+
+
+SELECT count(Nta_Promedio), count(Asi_Id)
+    FROM DBCampusNet.dbo.Nta_Nota
+    WHERE Mtr_Anio = '2021' AND
+        Mtr_Periodo = '1' AND
+        Nta_Promedio = 'im' AND
+        Est_Id = 'Q00683D';
 
 
 
