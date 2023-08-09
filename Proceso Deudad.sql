@@ -978,6 +978,41 @@ SELECT count(Nta_Promedio), count(Asi_Id)
         Est_Id = 'Q00683D';
 
 
+-- Total notas curso y total cursos matriculados
+--DECLARE @TotalNotasCurso BIGINT, @TotalCursosMatriculados BIGINT;
+SELECT count(Nta_Promedio), count(Asi_Id), Est_Id
+        FROM DBCampusNet.dbo.Nta_Nota
+        WHERE Mtr_Anio BETWEEN '2015' AND '2022' AND
+                Mtr_Periodo in ('1', '2') AND
+                Nta_Promedio = 'im'
+        GROUP by Nta_Promedio, Asi_Id, Est_Id
+
+select top 10 * from DBCampusNet.dbo.Nta_Nota
+
+select top 10 * FROM SGA.dbo.Num_fisica
+where num_bolfac = ''
+
+select top 10 * FROM SGA.dbo.PensionesxCobrar 
+where num_bolfac = ''
+
+select top 10 c.SeriDeud, c.NumDeud, c.AñoAcad, c.PeriAcad, c.NumCuota, a.Comprobante.  from SGA.Temp.anularCuotas  a 
+        INNER JOIN SGA.dbo.PensionesxCobrar b on a.Comprobante = b.Comprobante
+        INNER join SGA.dbo.Deudas c on b.SeriDeud = c.SeriDeud AND b.NumDeud = c.NumDeud
+        where b.Comprobante = 'B01200156693'
+
+
+select distinct TipoComp from SGA.Temp.anularCuotas 
+
+SELECT TipoComp, Comprobante, NumDI, importe_en_deuda, fecha importe_en_comprobante, tipo_comprobante_emitido FROM SGA.Temp.anularCuotas
+
+
+
+        
+
+
+
+
+
 
 
 

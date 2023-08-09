@@ -93,9 +93,8 @@ BEGIN
                             SELECT @OperSeriOper = SeriOper, @OperNumOper = NumOper, @OperTotOper = TotOper, @OperCod_AfectaIGV = Cod_AfectaIGV FROM SGA.dbo.Operacion WHERE TRIM(Serie_FE)+TRIM(Numero_FE) = TRIM(@ComprobanteFE);
 
 
-                            IF EXISTS (select * from SGA.dbo.Descuento_doble where Seriedeud = CONCAT(@DeudaSeri,@DeudaNum) AND Numdi = @codigo_est) BEGIN
+                            IF EXISTS (select * from SGA.dbo.Descuento_doble where Seriedeud = TRIM(@DeudaSeri)+TRIM(@DeudaNum) AND Numdi = @codigo_est) BEGIN
                                 /* DESCUENTO DOBLE */
-
 
                                 -- Operacion
                                 INSERT INTO SGA.dbo.Operacion
@@ -107,7 +106,7 @@ BEGIN
                                 )VALUES
                                 (
                                     @usuario_Serie, @NumOperChar, '12', @codigo_est, '01', -- condonacion
-                                    CONVERT(smalldatetime, GETDATE(), 120), CONVERT(char(8), GETDATE(), 108), 0, @OperTotOper, '1', 1, 'OPERACION DE CANCELACION DEUDA '+@DeudaSeri+@DeudaNum,
+                                    CONVERT(smalldatetime, GETDATE(), 120), CONVERT(char(8), GETDATE(), 108), 0, -@OperTotOper, '1', 1, 'OPERACION DE CANCELACION DEUDA '+ TRIM(@DeudaSeri)+TRIM(@DeudaNum),
                                     'ADMINISTRADOR', '----', @CodEsp, @SedeEst, @Programa, '0',
                                     30, @serie_NotaCredito, @NumNotaCreditoChar, 'NC', NULL, NULL, NULL
                                 );
@@ -121,8 +120,8 @@ BEGIN
                                 )
                                 VALUES
                                 (
-                                    @usuario_Serie, @NumOperChar, '001', '6595257', 'H', @OperTotOper, @DeudaNumCuota, @MatriculaAnioMax,
-                                    @MatriculaPeriodoMax, @DeudaSeri+@DeudaNum, 0, 0, 0, CONVERT(smalldatetime, GETDATE(), 120), '', 1,
+                                    @usuario_Serie, @NumOperChar, '001', '6595257', 'D', -@OperTotOper, @DeudaNumCuota, @MatriculaAnioMax,
+                                    @MatriculaPeriodoMax, TRIM(@DeudaSeri)+TRIM(@DeudaNum), 0, 0, 0, CONVERT(smalldatetime, GETDATE(), 120), '', 1,
                                     '----', '----', '7', @serie_NotaCredito+@NumNotaCreditoChar, @ComprobanteFE, '3'
                                 );
 
@@ -135,10 +134,9 @@ BEGIN
                                 )
                                 VALUES
                                 (
-                                    @usuario_Serie, @NumOperChar, CONVERT(date, GETDATE(), 120), @serie_NotaCredito, @NumNotaCreditoChar, 'ANULACIÓN DE LA OPERACIÓN '+@ComprobanteFE,
-                                    @DeudaImporte, 'NC', '01', '01', @OperSeriOper, @OperNumOper
+                                    @usuario_Serie, @NumOperChar, CONVERT(date, GETDATE(), 120), @serie_NotaCredito, @NumNotaCreditoChar, 'COMPROBANTE AFECTADO '+@ComprobanteFE,
+                                    @OperTotOper, 'NC', '01', '01', @OperSeriOper, @OperNumOper
                                 );
-                                
 
                                 UPDATE SGA.dbo.NumeracionFE SET 
                                     NumeroElec = RIGHT('00000000' + LTRIM(RTRIM(CONVERT(CHAR(8), CONVERT(BIGINT, @NumNotaCreditoChar) + 1 ))), 8)
@@ -170,6 +168,21 @@ BEGIN
                                 SELECT  SeriOper, NumOper, item, CodContab, TipCodCont, Importe, NumCuota, DocRef, Comprobante FROM SGA.dbo.DetOper 
                                 WHERE Comprobante = @ComprobanteFE;
 
+                                -- Operacion
+                                INSERT INTO SGA.dbo.Operacion
+                                (
+                                    SeriOper,NumOper,TipDI,NumDI,TipOper,
+                                    FecOper,HoraOper,AnulOper,TotOper,TipMoneda,TipCambio,Observac,
+                                    Usuario,TipDoc,Codespe,sede,programa,NumComFisico,
+                                    Cod_AfectaIGV,Serie_FE,Numero_FE,Tip_DocumentoTrib,Declarado_Sunat,Correlativo_Baja,Rechazado_Sunat
+                                )VALUES
+                                (
+                                    @usuario_Serie, @NumOperChar, '12', @codigo_est, '01', -- condonacion
+                                    CONVERT(smalldatetime, GETDATE(), 120), CONVERT(char(8), GETDATE(), 108), 0, -@OperTotOper, '1', 1, 'OPERACION DE CANCELACION DEUDA '+TRIM(@DeudaSeri)+TRIM(@DeudaNum),
+                                    'ADMINISTRADOR', '----', @CodEsp, @SedeEst, @Programa, '0',
+                                    30, @serie_NotaCredito, @NumNotaCreditoChar, 'NC', NULL, NULL, NULL
+                                );
+
                                 SELECT @rowsDet = count(@rowidDet) from @DeTalleOperTemp;
                                 WHILE (@rows > 0)
                                 BEGIN
@@ -185,7 +198,7 @@ BEGIN
                                     )
                                     VALUES
                                     (
-                                        @usuario_Serie, @NumOperChar, @DetItem, '6595257', 'H', @DetImporte, @DetNumCuota, @MatriculaAnioMax,
+                                        @usuario_Serie, @NumOperChar, @DetItem, '6595257', 'H', -@DetImporte, @DetNumCuota, @MatriculaAnioMax,
                                         @MatriculaPeriodoMax, @DetDocRef, 0, 0, 0, CONVERT(smalldatetime, GETDATE(), 120), '', 1,
                                         '----', '----', '7', @serie_NotaCredito+@NumNotaCreditoChar, @ComprobanteFE, '3'
                                     );
@@ -195,22 +208,7 @@ BEGIN
                                     
                                 END 
 
-                                -- Operacion
-                                INSERT INTO SGA.dbo.Operacion
-                                (
-                                    SeriOper,NumOper,TipDI,NumDI,TipOper,
-                                    FecOper,HoraOper,AnulOper,TotOper,TipMoneda,TipCambio,Observac,
-                                    Usuario,TipDoc,Codespe,sede,programa,NumComFisico,
-                                    Cod_AfectaIGV,Serie_FE,Numero_FE,Tip_DocumentoTrib,Declarado_Sunat,Correlativo_Baja,Rechazado_Sunat
-                                )VALUES
-                                (
-                                    @usuario_Serie, @NumOperChar, '12', @codigo_est, '01', -- condonacion
-                                    CONVERT(smalldatetime, GETDATE(), 120), CONVERT(char(8), GETDATE(), 108), 0, @OperTotOper, '1', 1, 'OPERACION DE CANCELACION DEUDA '+@DeudaSeri+@DeudaNum,
-                                    'ADMINISTRADOR', '----', @CodEsp, @SedeEst, @Programa, '0',
-                                    30, @serie_NotaCredito, @NumNotaCreditoChar, 'NC', NULL, NULL, NULL
-                                );
-
-
+        
                                 -- Nota Credito
                                 INSERT INTO SGA.dbo.Notas_Cred_Deb
                                 (
@@ -220,7 +218,7 @@ BEGIN
                                 VALUES
                                 (
                                     @usuario_Serie, @NumOperChar, CONVERT(date, GETDATE(), 120), @serie_NotaCredito, @NumNotaCreditoChar, 'ANULACIÓN DE LA OPERACIÓN '+@ComprobanteFE,
-                                    @DeudaImporte, 'NC', '01', '01', @OperSeriOper, @OperNumOper
+                                    @OperTotOper, 'NC', '01', '01', @OperSeriOper, @OperNumOper
                                 );
 
 
