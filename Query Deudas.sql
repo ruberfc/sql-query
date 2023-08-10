@@ -27,6 +27,7 @@ BEGIN
 
      -- Especialidad, sede y programa
     DECLARE @CodEsp VARCHAR(4), @SedeEst VARCHAR(2), @Programa CHAR(2);
+    
     SELECT top 1 @CodEsp = CodEspe, @SedeEst = sed_id, @Programa = MAC_id  FROM SGA.dbo.Clientes WHERE Cli_NumDoc = @NumDI;
 
     IF EXISTS (SELECT *  FROM SGA.Temp.SGA.Temp.anularCuotas where Comprobante not like '[0-9]%' ) BEGIN
